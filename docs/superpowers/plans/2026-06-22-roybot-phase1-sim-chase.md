@@ -117,6 +117,7 @@ runs/
 *.npz
 *.mp4
 .pytest_cache/
+.superpowers/
 ```
 
 ```python
