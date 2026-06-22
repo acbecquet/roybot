@@ -1,0 +1,37 @@
+import numpy as np
+from roybot.reward import compute_reward
+from roybot import config
+
+A0 = [0.0, 0.0]
+
+def test_willing_in_band_is_positive():
+    r, terms = compute_reward(dist=config.BAND_CENTER, prev_dist=config.BAND_CENTER,
+                              willing=True, action=A0, prev_action=A0, upright=True)
+    assert terms["engage"] > 0
+    assert r > 0
+
+def test_disinterested_and_approaching_is_penalized():
+    # cat not willing, robot closing distance => pestering
+    r, terms = compute_reward(dist=0.3, prev_dist=0.5, willing=False,
+                              action=A0, prev_action=A0, upright=True)
+    assert terms["pester"] < 0
+    assert r < 0
+
+def test_disinterested_and_retreating_is_rewarded():
+    r, terms = compute_reward(dist=0.6, prev_dist=0.4, willing=False,
+                              action=A0, prev_action=A0, upright=True)
+    assert terms["give_space"] > 0
+
+def test_tip_is_a_large_penalty():
+    r, terms = compute_reward(dist=config.BAND_CENTER, prev_dist=config.BAND_CENTER,
+                              willing=True, action=A0, prev_action=A0, upright=False)
+    assert terms["tip"] == -config.REWARD_WEIGHTS["tip"]
+    assert r < 0
+
+def test_action_rate_and_energy_penalize_big_jerky_actions():
+    r_calm, _ = compute_reward(dist=config.BAND_CENTER, prev_dist=config.BAND_CENTER,
+                               willing=True, action=A0, prev_action=A0, upright=True)
+    r_jerky, _ = compute_reward(dist=config.BAND_CENTER, prev_dist=config.BAND_CENTER,
+                                willing=True, action=[1.0, -1.0], prev_action=[-1.0, 1.0],
+                                upright=True)
+    assert r_jerky < r_calm
