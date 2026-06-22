@@ -323,11 +323,10 @@ def test_reset_places_cat_and_seeds_engagement():
 def test_in_band_play_raises_engagement():
     c = make_cat(); c.reset()
     c.engagement = 0.5
-    c.pos = np.array([0.0, 0.0])
-    robot = np.array([config.BAND_CENTER, 0.0])  # right in the play band
     before = c.engagement
     for _ in range(20):
-        c.step(0.02, robot)
+        c.pos = np.array([0.0, 0.0])  # re-pin each step so distance stays exactly in-band
+        c.step(0.02, np.array([config.BAND_CENTER, 0.0]))
     assert c.engagement > before
 
 def test_crowding_a_cat_lowers_engagement_and_makes_it_flee():
@@ -393,7 +392,7 @@ class Cat:
         self.vel = np.zeros(2)
         self.engagement = 0.5
         self._playfulness = 1.0
-        self.reset()
+        # no reset() here: Gym-style, the env calls reset() explicitly
 
     def reset(self) -> None:
         # personality: some sessions friskier than others
@@ -640,9 +639,11 @@ Expected: FAIL — `FileNotFoundError`/`could not open file` for `models/roybot.
 ```xml
 <!-- models/roybot.xml : differential-drive robot, 2 wheels + caster -->
 <mujoco model="roybot">
-  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <!-- implicitfast + wheel armature stabilize the low-inertia driven wheel DOF;
+       plain Euler at dt=2ms makes the velocity-servo'd wheel explode. -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <default>
-    <joint damping="0.01"/>
+    <joint damping="0.01" armature="0.001"/>
     <geom friction="1 0.1 0.01"/>
   </default>
 
@@ -677,8 +678,8 @@ Expected: FAIL — `FileNotFoundError`/`could not open file` for `models/roybot.
   </worldbody>
 
   <actuator>
-    <velocity name="left_motor"  joint="left_wheel_joint"  kv="0.05"/>
-    <velocity name="right_motor" joint="right_wheel_joint" kv="0.05"/>
+    <velocity name="left_motor"  joint="left_wheel_joint"  kv="5.0" forcerange="-1 1"/>
+    <velocity name="right_motor" joint="right_wheel_joint" kv="5.0" forcerange="-1 1"/>
   </actuator>
 
   <sensor>
@@ -694,7 +695,7 @@ Expected: FAIL — `FileNotFoundError`/`could not open file` for `models/roybot.
 
 Run: `pytest tests/test_model.py -q`
 Expected: PASS (4 passed).
-> If the body sinks/explodes, raise `chassis pos z` or wheel positions so wheels+caster touch the floor; if it won't drive, raise actuator `kv` or the `d.ctrl` values. Tune until the 4 tests pass — this is the calibration the spec calls for.
+> The three stabilizers above (`integrator="implicitfast"`, joint `armature="0.001"`, velocity actuators `kv="5.0" forcerange="-1 1"`) are what make a low-inertia driven wheel move instead of exploding — plain Euler + tiny `kv` does NOT drive at any `kv` (verified). If the body sinks, raise `chassis` pos z or wheel positions so wheels+caster touch the floor. If motion is too slow/fast, adjust `forcerange`/`kv` — that's the calibration the spec calls for.
 
 - [ ] **Step 5: Commit**
 
@@ -798,8 +799,8 @@ class RoybotChaseEnv(gym.Env):
         self.data = mujoco.MjData(self.model)
         self.domain_randomize = domain_randomize
         self._base_mass = self.model.body_mass.copy()
-        self._base_gain = self.model.actuator_gainprm.copy()
-        self.rng = np.random.default_rng(seed)
+        self._base_friction = self.model.geom_friction.copy()  # baseline so DR doesn't drift
+        self.rng = np.random.default_rng(seed)  # all env/cat randomness; gym np_random intentionally unused
 
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)
         high = np.full(12, np.inf, dtype=np.float32)
@@ -845,7 +846,7 @@ class RoybotChaseEnv(gym.Env):
             return
         self.model.body_mass[:] = self._base_mass * self.rng.uniform(0.8, 1.2)
         self.model.geom_friction[:, 0] = np.clip(
-            self.model.geom_friction[:, 0] * self.rng.uniform(0.7, 1.3), 0.01, None)
+            self._base_friction[:, 0] * self.rng.uniform(0.7, 1.3), 0.01, None)
         self._motor_gain = float(self.rng.uniform(0.85, 1.15))
         self._latency = int(self.rng.integers(0, 3))  # 0..2 control steps
 
@@ -952,7 +953,7 @@ def test_pestering_scores_worse_than_giving_space_when_disinterested():
 
     charge_env, retreat_env = make(), make()
     charge_total = retreat_total = 0.0
-    for _ in range(60):
+    for _ in range(30):  # 30 steps @0.6 m/s < 0.4 m: charger stays approaching, never overshoots
         _, rc, *_ = charge_env.step(np.array([1.0, 0.0]))   # toward the cat
         _, rr, *_ = retreat_env.step(np.array([-1.0, 0.0]))  # away from the cat
         charge_total += rc
@@ -1009,6 +1010,8 @@ Replace the body of `step` after `self._steps += 1` with:
         st = self._robot_state()
         self.cat.step(config.CONTROL_DT, st["pos"])
         self._sync_cat()
+        # NOTE: dist is measured after the cat moves, so approach_rate (prev_dist - dist)
+        # includes the cat's own motion, not only the robot's. Acceptable for Phase 1.
         dist = self._distance()
         reward, terms = compute_reward(
             dist=dist, prev_dist=self._prev_dist, willing=self.cat.willing,
@@ -1088,8 +1091,11 @@ def build_env(seed=0, domain_randomize=True):
 
 
 def train(total_timesteps=1_000_000, save_path="runs/chase_policy", n_envs=8, seed=0):
+    # make_vec_env resets each worker with seed+rank, so they get distinct RNG
+    # streams (cat + domain randomization). Don't pin a constructor seed here, or
+    # all workers would start as clones.
     venv = make_vec_env(
-        lambda: RoybotChaseEnv(domain_randomize=True, seed=seed),
+        lambda: RoybotChaseEnv(domain_randomize=True),
         n_envs=n_envs, seed=seed,
     )
     model = PPO(
@@ -1177,6 +1183,24 @@ def test_infer_imports_only_numpy():
     import roybot.infer as m
     src = open(m.__file__).read()
     assert "import torch" not in src and "stable_baselines3" not in src
+
+def test_inference_is_fast_enough_for_50hz(tmp_path):
+    # operationalizes spec success-criterion #5: tiny MLP must run well within the
+    # 50 Hz (20 ms) control budget. Desktop proxy; the Pi target is checked in Phase 2.
+    import time
+    env = RoybotChaseEnv(domain_randomize=False, seed=0)
+    model = PPO("MlpPolicy", env, seed=0, policy_kwargs=dict(net_arch=[64, 64]))
+    model.save(str(tmp_path / "m"))
+    npz_path = str(tmp_path / "m.npz")
+    export_mod.export(str(tmp_path / "m"), npz_path)
+    pol = NumpyPolicy.from_npz(npz_path)
+    obs = np.zeros(12, dtype=np.float32)
+    pol.act(obs)  # warm up
+    t0 = time.perf_counter()
+    for _ in range(1000):
+        pol.act(obs)
+    mean_ms = (time.perf_counter() - t0) / 1000.0 * 1000.0
+    assert mean_ms < 1.0  # generous; real inference is microseconds
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1189,12 +1213,20 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'roybot.infer'` / `expo
 ```python
 # scripts/export.py
 """Extract the deterministic actor MLP from an SB3 PPO model into a .npz."""
+import os
+
 import numpy as np
 from stable_baselines3 import PPO
+from stable_baselines3.common.distributions import DiagGaussianDistribution
 
 
 def export(model_path, npz_path):
     model = PPO.load(model_path, device="cpu")
+    # infer.py replicates an unsquashed tanh-MLP -> linear -> clip. Fail loudly if a
+    # future config (SDE / squashed dist) would silently make that path wrong on the Pi.
+    assert not getattr(model.policy, "use_sde", False), "infer.py does not support SDE policies"
+    assert isinstance(model.policy.action_dist, DiagGaussianDistribution), \
+        "infer.py only matches a non-squashed DiagGaussian PPO policy"
     layers = []
     # policy_net: alternating Linear/Tanh -> grab the Linear layers in order
     for mod in model.policy.mlp_extractor.policy_net:
@@ -1207,6 +1239,7 @@ def export(model_path, npz_path):
         arrays[f"w{i}"] = lin.weight.detach().cpu().numpy()  # (out, in)
         arrays[f"b{i}"] = lin.bias.detach().cpu().numpy()    # (out,)
     arrays["n_layers"] = np.array(len(layers))
+    os.makedirs(os.path.dirname(npz_path) or ".", exist_ok=True)
     np.savez(npz_path, **arrays)
 
 
@@ -1248,7 +1281,7 @@ class NumpyPolicy:
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/test_infer.py -q`
-Expected: PASS (2 passed)
+Expected: PASS (3 passed)
 
 - [ ] **Step 5: Commit**
 
@@ -1422,4 +1455,6 @@ git commit -m "feat: episode metrics + sim demo with consent/play eval"
 
 - **Spec coverage:** §4B driver→Task 2; §4C twin+moody cat→Tasks 3,5; §4D obs/action/reward+consent→Tasks 4,6,7; training stack/DR→Tasks 6,8; export/@50 Hz-ready→Task 9; §9 success criteria→Task 10 + final gate. Hardware (§4A/E real reflexes), perception, dock = later sub-projects, intentionally out of Phase 1.
 - **Type consistency:** `differential_drive` signature, `Cat.step(dt, robot_xy)`, `compute_reward(**kwargs)` keys, env helper names (`_robot_state`, `_distance`, `_get_obs`, `cat_xy/cat_vel/cat_engagement`), and `NumpyPolicy.act/from_npz` are used identically across tasks.
+- **Deferred sim2real detail (intentional, Phase 2):** the env injects control latency (0–2 steps = 0–40 ms) and a motor-gain, and the driver keeps `calib_left/right`, but a motor **deadband / PWM→speed nonlinearity** is NOT modeled and `calib_*` are not yet exercised (always 1.0). Spec §7 lists these under sim2real, which leans Phase 2 — so this is a scoped gap, not a miss.
 - **Optional later accelerator (not in this plan):** port the env to MJX/Brax for minute-scale GPU training if SB3 iteration becomes the bottleneck — deferred per YAGNI.
+- **Verification applied:** an adversarial API pass (mujoco 3.10 / SB3 2.3 / gymnasium) was folded into this plan — notably the MuJoCo stabilizers in Task 5 (implicitfast + armature + force-clamped actuators) without which the model does not drive, and the friction-baseline fix in Task 6.
