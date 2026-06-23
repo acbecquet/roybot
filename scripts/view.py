@@ -12,10 +12,13 @@ Controls: drag L = rotate, drag R = pan, scroll = zoom, SPACE = pause,
           R = new episode, ESC = quit. The window loops episodes until closed.
 """
 import argparse
+import os
+import time
 
 import numpy as np
 import mujoco
 
+from roybot import config
 from roybot.env import RoybotChaseEnv
 from roybot.infer import NumpyPolicy
 
@@ -61,96 +64,127 @@ def overlay_text(env, ep_reward, paused):
 def run(policy_npz, fontscale=250, width=1200, height=900):
     import glfw  # PyGLFW (same binding mujoco.viewer uses)
 
+    if not os.path.exists(policy_npz):
+        raise FileNotFoundError(
+            f"policy not found: {policy_npz}\n"
+            "Train one first (scripts/train.py + scripts/export.py), "
+            "or point at an existing .npz under runs/."
+        )
     policy = NumpyPolicy.from_npz(policy_npz)
     env = RoybotChaseEnv(domain_randomize=True, seed=0)
     obs, _ = env.reset(seed=0)
     model, data = env.model, env.data
 
     if not glfw.init():
-        raise RuntimeError("Could not initialize GLFW")
-    window = glfw.create_window(width, height, "Roybot - chase viewer", None, None)
-    if not window:
+        raise RuntimeError(
+            "Could not initialize GLFW. This viewer needs a display — "
+            "run it on the desktop, not over a headless/SSH session. "
+            "For headless metrics use scripts/demo.py instead."
+        )
+
+    window = None
+    context = None
+    try:
+        window = glfw.create_window(width, height, "Roybot - chase viewer", None, None)
+        if not window:
+            raise RuntimeError("Could not create GLFW window (no GL context available)")
+        glfw.make_context_current(window)
+        glfw.swap_interval(1)  # vsync
+
+        cam = mujoco.MjvCamera()
+        opt = mujoco.MjvOption()
+        mujoco.mjv_defaultCamera(cam)
+        mujoco.mjv_defaultOption(opt)
+        cam.azimuth, cam.elevation, cam.distance = 90.0, -35.0, 2.5
+        cam.lookat[:] = [0.0, 0.0, 0.0]
+
+        scene = mujoco.MjvScene(model, 10000)
+        font = getattr(mujoco.mjtFontScale, f"mjFONTSCALE_{fontscale}")
+        context = mujoco.MjrContext(model, font.value)
+
+        mouse = {"x": 0.0, "y": 0.0, "L": False, "R": False, "M": False}
+        state = {"paused": False}
+
+        def on_key(win, key, scancode, act, mods):
+            if act != glfw.PRESS:
+                return
+            if key == glfw.KEY_ESCAPE:
+                glfw.set_window_should_close(win, True)
+            elif key == glfw.KEY_SPACE:
+                state["paused"] = not state["paused"]
+            elif key == glfw.KEY_R:
+                env.reset()
+
+        def on_mouse_button(win, button, act, mods):
+            mouse["L"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS
+            mouse["R"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_RIGHT) == glfw.PRESS
+            mouse["M"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_MIDDLE) == glfw.PRESS
+            mouse["x"], mouse["y"] = glfw.get_cursor_pos(win)
+
+        def on_cursor(win, xpos, ypos):
+            dx, dy = xpos - mouse["x"], ypos - mouse["y"]
+            mouse["x"], mouse["y"] = xpos, ypos
+            if not (mouse["L"] or mouse["R"] or mouse["M"]):
+                return
+            h = max(1, glfw.get_window_size(win)[1])
+            if mouse["L"]:
+                act = mujoco.mjtMouse.mjMOUSE_ROTATE_V
+            elif mouse["R"]:
+                act = mujoco.mjtMouse.mjMOUSE_MOVE_H
+            else:
+                act = mujoco.mjtMouse.mjMOUSE_ZOOM
+            mujoco.mjv_moveCamera(model, act.value, dx / h, dy / h, scene, cam)
+
+        def on_scroll(win, xoff, yoff):
+            mujoco.mjv_moveCamera(model, mujoco.mjtMouse.mjMOUSE_ZOOM.value,
+                                  0.0, -0.05 * yoff, scene, cam)
+
+        glfw.set_key_callback(window, on_key)
+        glfw.set_mouse_button_callback(window, on_mouse_button)
+        glfw.set_cursor_pos_callback(window, on_cursor)
+        glfw.set_scroll_callback(window, on_scroll)
+
+        # Step the sim in real time: it's a fixed 50 Hz controller, but vsync
+        # paces rendering at the display rate (~60 Hz). Decouple them so playback
+        # speed is correct instead of ~20% fast.
+        period = 1.0 / config.CONTROL_HZ
+        ep_reward = 0.0
+        acc = 0.0
+        last = time.perf_counter()
+        while not glfw.window_should_close(window):
+            now = time.perf_counter()
+            if state["paused"]:
+                acc = 0.0                      # don't bank elapsed time while paused
+            else:
+                acc += now - last
+                stepped = 0
+                while acc >= period and stepped < 4:  # ponytail: cap catch-up, no spiral-of-death
+                    obs, rew, term, trunc, _ = env.step(policy.act(obs))
+                    ep_reward += rew
+                    acc -= period
+                    stepped += 1
+                    if term or trunc:
+                        obs, _ = env.reset()
+                        ep_reward = 0.0
+                        break
+            last = now
+
+            mujoco.mjv_updateScene(model, data, opt, None, cam,
+                                   mujoco.mjtCatBit.mjCAT_ALL.value, scene)
+            add_cat_marker(scene, env)
+            w, h = glfw.get_framebuffer_size(window)
+            viewport = mujoco.MjrRect(0, 0, w, h)
+            mujoco.mjr_render(viewport, scene, context)
+            mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_BIG.value,
+                               mujoco.mjtGridPos.mjGRID_TOPLEFT.value,
+                               viewport, overlay_text(env, ep_reward, state["paused"]),
+                               "", context)
+            glfw.swap_buffers(window)
+            glfw.poll_events()
+    finally:
+        if context is not None:
+            context.free()
         glfw.terminate()
-        raise RuntimeError("Could not create GLFW window")
-    glfw.make_context_current(window)
-    glfw.swap_interval(1)  # vsync
-
-    cam = mujoco.MjvCamera()
-    opt = mujoco.MjvOption()
-    mujoco.mjv_defaultCamera(cam)
-    mujoco.mjv_defaultOption(opt)
-    cam.azimuth, cam.elevation, cam.distance = 90.0, -35.0, 2.5
-    cam.lookat[:] = [0.0, 0.0, 0.0]
-
-    scene = mujoco.MjvScene(model, 10000)
-    font = getattr(mujoco.mjtFontScale, f"mjFONTSCALE_{fontscale}")
-    context = mujoco.MjrContext(model, font.value)
-
-    mouse = {"x": 0.0, "y": 0.0, "L": False, "R": False, "M": False}
-    state = {"paused": False}
-
-    def on_key(win, key, scancode, act, mods):
-        if act != glfw.PRESS:
-            return
-        if key == glfw.KEY_ESCAPE:
-            glfw.set_window_should_close(win, True)
-        elif key == glfw.KEY_SPACE:
-            state["paused"] = not state["paused"]
-        elif key == glfw.KEY_R:
-            env.reset()
-
-    def on_mouse_button(win, button, act, mods):
-        mouse["L"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS
-        mouse["R"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_RIGHT) == glfw.PRESS
-        mouse["M"] = glfw.get_mouse_button(win, glfw.MOUSE_BUTTON_MIDDLE) == glfw.PRESS
-        mouse["x"], mouse["y"] = glfw.get_cursor_pos(win)
-
-    def on_cursor(win, xpos, ypos):
-        dx, dy = xpos - mouse["x"], ypos - mouse["y"]
-        mouse["x"], mouse["y"] = xpos, ypos
-        if not (mouse["L"] or mouse["R"] or mouse["M"]):
-            return
-        h = max(1, glfw.get_window_size(win)[1])
-        if mouse["L"]:
-            act = mujoco.mjtMouse.mjMOUSE_ROTATE_V
-        elif mouse["R"]:
-            act = mujoco.mjtMouse.mjMOUSE_MOVE_H
-        else:
-            act = mujoco.mjtMouse.mjMOUSE_ZOOM
-        mujoco.mjv_moveCamera(model, act.value, dx / h, dy / h, scene, cam)
-
-    def on_scroll(win, xoff, yoff):
-        mujoco.mjv_moveCamera(model, mujoco.mjtMouse.mjMOUSE_ZOOM.value,
-                              0.0, -0.05 * yoff, scene, cam)
-
-    glfw.set_key_callback(window, on_key)
-    glfw.set_mouse_button_callback(window, on_mouse_button)
-    glfw.set_cursor_pos_callback(window, on_cursor)
-    glfw.set_scroll_callback(window, on_scroll)
-
-    ep_reward = 0.0
-    while not glfw.window_should_close(window):
-        if not state["paused"]:
-            obs, rew, term, trunc, _ = env.step(policy.act(obs))
-            ep_reward += rew
-            if term or trunc:
-                obs, _ = env.reset()
-                ep_reward = 0.0
-
-        mujoco.mjv_updateScene(model, data, opt, None, cam,
-                               mujoco.mjtCatBit.mjCAT_ALL.value, scene)
-        add_cat_marker(scene, env)
-        w, h = glfw.get_framebuffer_size(window)
-        viewport = mujoco.MjrRect(0, 0, w, h)
-        mujoco.mjr_render(viewport, scene, context)
-        mujoco.mjr_overlay(mujoco.mjtFont.mjFONT_BIG.value,
-                           mujoco.mjtGridPos.mjGRID_TOPLEFT.value,
-                           viewport, overlay_text(env, ep_reward, state["paused"]),
-                           "", context)
-        glfw.swap_buffers(window)
-        glfw.poll_events()
-
-    glfw.terminate()
 
 
 if __name__ == "__main__":
