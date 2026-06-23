@@ -1441,11 +1441,17 @@ git commit -m "feat: episode metrics + sim demo with consent/play eval"
 
 - [ ] Run the full suite: `pytest -q` → all green.
 - [ ] Confirm Phase-1 success criteria from the spec:
-  1. ✅ twin loads + `drive()` moves it (Tasks 2, 5).
-  2. ✅ cat moves + engagement rises/falls (Task 3).
-  3. ✅ policy plays a willing cat without tipping (Tasks 7–8, demo).
-  4. ✅ consent test: backs off a disinterested cat (Task 7 test + demo metric).
-  5. ✅ policy exports + runs torch-free (Task 9) — Pi-ready (deploy is Phase 2).
+  1. ✅ twin loads + `drive()` moves it — demonstrated by tests (Tasks 2, 5).
+  2. ✅ cat moves + engagement rises/falls — demonstrated by tests (Task 3).
+  3. 🧪 *harness in place* (env + PPO trainer + demo eval): the trained-policy
+     threshold (plays a willing cat, no tips) is **confirmed on the first real
+     training run**, not self-certified here.
+  4. 🧪 *consent reward + test in place* (`test_env_consent`: pestering a
+     disinterested cat scores worse than giving space; approach_rate is
+     robot-attributed so the cat's own motion can't game it). The trained-policy
+     consent metric (`approach_rate_when_disinterested` low) is **confirmed on
+     the first training run**.
+  5. ✅ policy exports + runs torch-free with SB3 parity (Task 9) — Pi-ready (deploy is Phase 2).
   6/7. Real-base drive + safety floor → **Phase 2** (hardware), out of this plan.
 - [ ] `git push`
 
