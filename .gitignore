@@ -8,3 +8,4 @@ runs/
 *.mp4
 .pytest_cache/
 .superpowers/
+*.egg-info/

@@ -1,8 +1,0 @@
-pyproject.toml
-src/roybot/__init__.py
-src/roybot/config.py
-src/roybot.egg-info/PKG-INFO
-src/roybot.egg-info/SOURCES.txt
-src/roybot.egg-info/dependency_links.txt
-src/roybot.egg-info/top_level.txt
-tests/test_config.py
