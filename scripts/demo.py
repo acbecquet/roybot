@@ -18,6 +18,8 @@ def _rollout(env, policy, record, view_handle=None):
                        "upright": env._robot_state()["upright"]})
         if view_handle is not None:
             view_handle.sync()
+            if not view_handle.is_running():   # window closed -> stop promptly
+                return
         done = term or trunc
 
 
@@ -40,6 +42,7 @@ if __name__ == "__main__":
         import mujoco.viewer
         env = RoybotChaseEnv(domain_randomize=False, seed=0)
         with mujoco.viewer.launch_passive(env.model, env.data) as v:
-            _rollout(env, policy, [], view_handle=v)
+            while v.is_running():   # keep the window open: replay episodes (fresh cat each round) until you close it
+                _rollout(env, policy, [], view_handle=v)
     else:
         print(evaluate(policy, a.episodes))
