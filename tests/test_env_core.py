@@ -56,4 +56,5 @@ def test_stationary_robot_earns_no_anticipation():
     for _ in range(15):
         env.cat.engagement = 0.9              # willing -> anticipate term active
         _, _, _, _, info = env.step(np.zeros(2))  # robot holds still
+        assert info["willing"]                # guard: not a vacuous pass via disinterest
         assert abs(info["anticipate_rate"]) < 0.05
