@@ -147,8 +147,11 @@ class RoybotChaseEnv(gym.Env):
         dist = float(np.linalg.norm(self.cat_xy - st["pos"]))          # current dist (for band)
         # robot-attributed approach: change in distance to where the cat WAS, due to robot motion only
         approach_rate = self._prev_dist - float(np.linalg.norm(cat_prev - st["pos"]))
+        predicted = cat_prev + self.cat_vel * config.ANTICIPATE_HORIZON
+        anticipate_rate = self._prev_dist - float(np.linalg.norm(predicted - st["pos"]))
         reward, terms = compute_reward(
-            dist=dist, approach_rate=approach_rate, willing=self.cat.willing,
+            dist=dist, approach_rate=approach_rate, anticipate_rate=anticipate_rate,
+            willing=self.cat.willing,
             action=action, prev_action=self._prev_action, upright=st["upright"],
         )
         self._prev_dist = dist
@@ -156,5 +159,5 @@ class RoybotChaseEnv(gym.Env):
         truncated = self._steps >= self._max_steps
         self._prev_action = action
         info = {"reward_terms": terms, "willing": self.cat.willing,
-                "dist": dist, "approach_rate": approach_rate}
+                "dist": dist, "approach_rate": approach_rate, "anticipate_rate": anticipate_rate}
         return self._get_obs(), float(reward), terminated, truncated, info
