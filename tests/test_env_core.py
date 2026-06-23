@@ -1,16 +1,17 @@
 # tests/test_env_core.py
 import numpy as np
 from roybot.env import RoybotChaseEnv
+from roybot import config
 
 def test_spaces():
     env = RoybotChaseEnv(domain_randomize=False, seed=0)
-    assert env.observation_space.shape == (12,)
+    assert env.observation_space.shape == (12 * config.N_STACK,)
     assert env.action_space.shape == (2,)
 
 def test_reset_returns_obs_and_info():
     env = RoybotChaseEnv(domain_randomize=False, seed=0)
     obs, info = env.reset(seed=0)
-    assert obs.shape == (12,)
+    assert obs.shape == (12 * config.N_STACK,)
     assert np.all(np.isfinite(obs))
 
 def test_step_returns_5_tuple_and_drives_forward():
@@ -19,7 +20,7 @@ def test_step_returns_5_tuple_and_drives_forward():
     x0 = env._robot_state()["pos"][0]
     for _ in range(40):
         obs, rew, term, trunc, info = env.step(np.array([1.0, 0.0]))  # full forward
-    assert obs.shape == (12,) and isinstance(rew, float)
+    assert obs.shape == (12 * config.N_STACK,) and isinstance(rew, float)
     assert env._robot_state()["pos"][0] > x0
 
 def test_time_limit_truncates():

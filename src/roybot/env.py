@@ -1,6 +1,7 @@
 # src/roybot/env.py
 """Gymnasium env wrapping the MuJoCo twin + closed-form driver (+ moody cat in Task 7)."""
 import math
+from collections import deque
 
 import numpy as np
 import mujoco
@@ -41,7 +42,8 @@ class RoybotChaseEnv(gym.Env):
         self.cat = Cat(self.rng)
 
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)
-        high = np.full(12, np.inf, dtype=np.float32)
+        self._stack = deque(maxlen=config.N_STACK)
+        high = np.full(12 * config.N_STACK, np.inf, dtype=np.float32)
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self._max_steps = int(round(config.EPISODE_SECONDS * config.CONTROL_HZ))
@@ -67,7 +69,7 @@ class RoybotChaseEnv(gym.Env):
             "upright": up_z > config.TIP_UPRIGHT_MIN,
         }
 
-    def _get_obs(self):
+    def _base_obs(self):
         st = self._robot_state()
         rel = _world_to_robot(self.cat_xy - st["pos"], st["yaw"])
         cat_vel_rel = _world_to_robot(getattr(self, "cat_vel", np.zeros(2)), st["yaw"])
@@ -77,6 +79,15 @@ class RoybotChaseEnv(gym.Env):
             st["vfwd"], st["vlat"], st["yaw_rate"], st["roll"], st["pitch"],
             self._prev_action[0], self._prev_action[1],
         ], dtype=np.float32)
+
+    def _get_obs(self):
+        base = self._base_obs()
+        if not self._stack:
+            for _ in range(config.N_STACK):
+                self._stack.append(base)
+        else:
+            self._stack.append(base)
+        return np.concatenate(list(self._stack)).astype(np.float32)
 
     def _apply_domain_randomization(self):
         if not self.domain_randomize:
@@ -103,6 +114,7 @@ class RoybotChaseEnv(gym.Env):
         self.cat.reset()
         self._sync_cat()
         self._prev_dist = self._distance()
+        self._stack.clear()
         return self._get_obs(), {}
 
     def _sync_cat(self):

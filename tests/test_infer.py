@@ -17,8 +17,9 @@ def test_numpy_policy_matches_sb3(tmp_path):
 
     pol = NumpyPolicy.from_npz(npz_path)
     rng = np.random.default_rng(0)
+    n = env.observation_space.shape[0]
     for _ in range(20):
-        obs = rng.standard_normal(12).astype(np.float32)
+        obs = rng.standard_normal(n).astype(np.float32)
         sb3_action, _ = model.predict(obs, deterministic=True)
         np.testing.assert_allclose(pol.act(obs), sb3_action, rtol=1e-4, atol=1e-4)
 
@@ -37,7 +38,8 @@ def test_inference_is_fast_enough_for_50hz(tmp_path):
     npz_path = str(tmp_path / "m.npz")
     export_mod.export(str(tmp_path / "m"), npz_path)
     pol = NumpyPolicy.from_npz(npz_path)
-    obs = np.zeros(12, dtype=np.float32)
+    n = env.observation_space.shape[0]
+    obs = np.zeros(n, dtype=np.float32)
     pol.act(obs)  # warm up
     t0 = time.perf_counter()
     for _ in range(1000):
