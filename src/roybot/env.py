@@ -9,6 +9,8 @@ from gymnasium import spaces
 
 from . import config
 from .driver import differential_drive
+from .cat import Cat
+from .reward import compute_reward
 
 
 def _quat_to_rpy(q):
@@ -36,6 +38,7 @@ class RoybotChaseEnv(gym.Env):
         self._base_mass = self.model.body_mass.copy()
         self._base_friction = self.model.geom_friction.copy()  # baseline so DR doesn't drift
         self.rng = np.random.default_rng(seed)  # all env/cat randomness; gym np_random intentionally unused
+        self.cat = Cat(self.rng)
 
         self.action_space = spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)
         high = np.full(12, np.inf, dtype=np.float32)
@@ -96,10 +99,19 @@ class RoybotChaseEnv(gym.Env):
         self._prev_action = np.zeros(2)
         self._action_buf = [np.zeros(2)] * self._latency  # latency=0 => apply immediately
         self._steps = 0
-        self.cat_xy = np.array([config.BAND_CENTER, 0.0])
-        self.cat_vel = np.zeros(2)
-        self.cat_engagement = 0.5
+        self.cat.rng = self.rng
+        self.cat.reset()
+        self._sync_cat()
+        self._prev_dist = self._distance()
         return self._get_obs(), {}
+
+    def _sync_cat(self):
+        self.cat_xy = self.cat.pos.copy()
+        self.cat_vel = self.cat.vel.copy()
+        self.cat_engagement = self.cat.engagement
+
+    def _distance(self):
+        return float(np.linalg.norm(self.cat_xy - self._robot_state()["pos"]))
 
     def _drive(self, action):
         self._action_buf.append(np.asarray(action, dtype=float))
@@ -117,8 +129,18 @@ class RoybotChaseEnv(gym.Env):
             mujoco.mj_step(self.model, self.data)
         self._steps += 1
         st = self._robot_state()
+        self.cat.step(config.CONTROL_DT, st["pos"])
+        self._sync_cat()
+        # NOTE: dist is measured after the cat moves, so approach_rate (prev_dist - dist)
+        # includes the cat's own motion, not only the robot's. Acceptable for Phase 1.
+        dist = self._distance()
+        reward, terms = compute_reward(
+            dist=dist, prev_dist=self._prev_dist, willing=self.cat.willing,
+            action=action, prev_action=self._prev_action, upright=st["upright"],
+        )
+        self._prev_dist = dist
         terminated = not st["upright"]
         truncated = self._steps >= self._max_steps
-        reward = 0.0  # Task 7 fills this in
         self._prev_action = action
-        return self._get_obs(), float(reward), terminated, truncated, {}
+        info = {"reward_terms": terms, "willing": self.cat.willing, "dist": dist}
+        return self._get_obs(), float(reward), terminated, truncated, info
