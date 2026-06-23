@@ -28,7 +28,7 @@ def compute_reward(*, dist, approach_rate, anticipate_rate, willing, action, pre
         # juking: reward changing the distance (dynamic play), only while in band
         if config.BAND_MIN <= dist <= config.BAND_MAX:
             terms["juke"] = w["juke"] * min(abs(approach_rate), config.JUKE_RATE_CAP)
-        terms["anticipate"] = config.REWARD_WEIGHTS["anticipate"] * max(0.0, anticipate_rate)
+        terms["anticipate"] = w["anticipate"] * max(0.0, anticipate_rate)
     else:
         # retreating (approach_rate < 0) is good; approaching is pestering
         terms["give_space"] = w["give_space"] * max(0.0, -approach_rate)

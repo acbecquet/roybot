@@ -85,5 +85,6 @@ def test_speed_scale_scales_motion():
 
 def test_personality_sampled_in_reset():
     c = make_cat(0); c.reset()
+    assert config.CAT_PLAYFULNESS_RANGE[0] <= c._playfulness <= config.CAT_PLAYFULNESS_RANGE[1]
     assert config.CAT_SKITTISHNESS_RANGE[0] <= c._skittishness <= config.CAT_SKITTISHNESS_RANGE[1]
     assert config.CAT_ATTENTION_RANGE[0] <= c._attention <= config.CAT_ATTENTION_RANGE[1]

@@ -25,7 +25,9 @@ ENGAGE_GAIN = 0.8               # /s engagement gained during good in-band play
 PESTER_RATE = 1.2               # /s engagement lost while being crowded
 ENGAGE_DECAY = 0.05             # /s natural waning
 CAT_FLEE_SPEED = 0.7            # m/s
+CAT_FLEE_SKITTISH_FACTOR = 0.3  # scales _skittishness contribution to flee speed
 CAT_WANDER_SPEED = 0.1          # m/s
+CAT_WANDER_TIMER_S = (0.5, 1.5) # seconds to hold a wander heading
 CAT_DART_PROB = 0.04            # per control step, when willing
 CAT_ARENA_HALF = 2.0            # m — cat position clamped to ±this
 JUKE_RATE_CAP = 0.5             # m/s — cap on approach_rate magnitude for juke reward
@@ -69,4 +71,4 @@ DR_FRICTION = (0.6, 1.4)        # geom-friction scale
 DR_MOTOR_GAIN = (0.8, 1.2)      # commanded-speed scale
 DR_LATENCY_STEPS = (0, 4)       # control-step latency (exclusive high -> 0..3)
 DIFFICULTY_RANGE = (0.0, 1.0)   # per-episode difficulty; scales cat speed/evasiveness
-CAT_SPEED_SCALE_AT_MAX = 1.6    # cat speed multiplier at difficulty=1.0 (1.0 at difficulty=0)
+CAT_SPEED_SCALE_AT_MAX = 1.3    # cat speed multiplier at difficulty=1.0 (1.0 at difficulty=0)

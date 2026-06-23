@@ -48,3 +48,12 @@ def test_no_dr_keeps_baseline_difficulty():
     env = RoybotChaseEnv(domain_randomize=False, seed=0)
     env.reset(seed=0)
     assert env.cat.speed_scale == 1.0
+
+def test_stationary_robot_earns_no_anticipation():
+    # C1 regression: a still robot must not farm anticipation from the cat's motion.
+    env = RoybotChaseEnv(domain_randomize=False, seed=0)
+    env.reset(seed=0)
+    for _ in range(15):
+        env.cat.engagement = 0.9              # willing -> anticipate term active
+        _, _, _, _, info = env.step(np.zeros(2))  # robot holds still
+        assert abs(info["anticipate_rate"]) < 0.05

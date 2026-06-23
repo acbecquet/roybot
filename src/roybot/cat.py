@@ -80,12 +80,12 @@ class Cat:
         self._mode_timer -= dt
         if dist < config.BAND_MIN:                       # crowded -> flee
             self.mode = "flee"
-            vel = -unit * config.CAT_FLEE_SPEED * (1.0 + 0.3 * self._skittishness)
+            vel = -unit * config.CAT_FLEE_SPEED * (1.0 + config.CAT_FLEE_SKITTISH_FACTOR * self._skittishness)
         elif not self.willing:                           # disinterested -> wander/rest
             self.mode = "rest"
             if self._mode_timer <= 0:
                 self._heading = self._random_unit()
-                self._mode_timer = float(self.rng.uniform(0.5, 1.5))
+                self._mode_timer = float(self.rng.uniform(*config.CAT_WANDER_TIMER_S))
             vel = self._heading * config.CAT_WANDER_SPEED
         else:                                            # willing -> play
             if self._mode_timer <= 0:

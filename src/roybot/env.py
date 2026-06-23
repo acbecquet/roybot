@@ -54,6 +54,7 @@ class RoybotChaseEnv(gym.Env):
         self._motor_gain = 1.0
         self._steps = 0
         self.difficulty = 0.0
+        self._prev_robot_pos = np.zeros(2)
 
     # --- helpers ---
     def _robot_state(self):
@@ -100,7 +101,7 @@ class RoybotChaseEnv(gym.Env):
             self._base_friction[:, 0] * self.rng.uniform(*config.DR_FRICTION), 0.01, None)
         self._motor_gain = float(self.rng.uniform(*config.DR_MOTOR_GAIN))
         self._latency = int(self.rng.integers(*config.DR_LATENCY_STEPS))
-        self.difficulty = float(self.rng.uniform(*config.DIFFICULTY_RANGE))
+        self.difficulty = float(self.rng.uniform(*config.DIFFICULTY_RANGE)) ** 2
 
     # --- gym API ---
     def reset(self, *, seed=None, options=None):
@@ -118,6 +119,7 @@ class RoybotChaseEnv(gym.Env):
         self.cat.speed_scale = (1.0 + self.difficulty * (config.CAT_SPEED_SCALE_AT_MAX - 1.0)) if self.domain_randomize else 1.0
         self._sync_cat()
         self._prev_dist = self._distance()
+        self._prev_robot_pos = self._robot_state()["pos"].copy()
         self._stack.clear()
         return self._get_obs(), {}
 
@@ -151,14 +153,18 @@ class RoybotChaseEnv(gym.Env):
         dist = float(np.linalg.norm(self.cat_xy - st["pos"]))          # current dist (for band)
         # robot-attributed approach: change in distance to where the cat WAS, due to robot motion only
         approach_rate = self._prev_dist - float(np.linalg.norm(cat_prev - st["pos"]))
+        # robot-attributed anticipation: how much the ROBOT (not the cat) closed on the
+        # cat's predicted lead point. Zeroes out when the robot is stationary.
         predicted = cat_prev + self.cat_vel * config.ANTICIPATE_HORIZON
-        anticipate_rate = self._prev_dist - float(np.linalg.norm(predicted - st["pos"]))
+        anticipate_rate = (float(np.linalg.norm(predicted - self._prev_robot_pos))
+                           - float(np.linalg.norm(predicted - st["pos"])))
         reward, terms = compute_reward(
             dist=dist, approach_rate=approach_rate, anticipate_rate=anticipate_rate,
             willing=self.cat.willing,
             action=action, prev_action=self._prev_action, upright=st["upright"],
         )
         self._prev_dist = dist
+        self._prev_robot_pos = st["pos"].copy()
         terminated = not st["upright"]
         truncated = self._steps >= self._max_steps
         self._prev_action = action

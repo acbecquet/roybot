@@ -1,4 +1,8 @@
-"""Torch-free deterministic policy inference. numpy only — runs on the Pi."""
+"""Torch-free deterministic policy inference. numpy only — runs on the Pi.
+
+Deployment note: the caller must frame-stack the last config.N_STACK observations
+(concatenated into a single flat array) before passing them to act(), mirroring the env.
+"""
 import numpy as np
 
 
