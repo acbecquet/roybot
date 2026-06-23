@@ -43,3 +43,30 @@ REWARD_WEIGHTS = {
     "action_rate": 0.05, # ||action - prev_action||^2 penalty
     "tip": 10.0,         # one-time penalty on tip-over
 }
+
+# --- Phase 1.5: frame stacking ---
+N_STACK = 6                      # observations stacked for motion/anticipation context
+
+# --- Phase 1.5: rich cat behavior modes ---
+CAT_STALK_SPEED = 0.12          # m/s slow circling creep
+CAT_POUNCE_SPEED = 0.9          # m/s burst toward the robot
+CAT_BAT_SPEED = 0.45            # m/s quick swipe
+CAT_DART_SPEED = 0.7            # m/s erratic burst
+CAT_MODE_MIN_S = 0.4            # min seconds a play mode is held
+CAT_MODE_MAX_S = 1.6            # max seconds a play mode is held
+# personality is sampled per episode in Cat.reset() from these ranges:
+CAT_PLAYFULNESS_RANGE = (0.6, 1.4)
+CAT_SKITTISHNESS_RANGE = (0.5, 1.5)
+CAT_ATTENTION_RANGE = (0.5, 1.5)
+
+# --- Phase 1.5: anticipation reward ---
+ANTICIPATE_HORIZON = 0.4        # s ahead to predict the cat's position
+REWARD_WEIGHTS["anticipate"] = 0.6   # reward closing on the predicted (lead) position
+
+# --- Phase 1.5: domain randomization ranges (widened) + difficulty ---
+DR_MASS = (0.7, 1.3)            # body-mass scale
+DR_FRICTION = (0.6, 1.4)        # geom-friction scale
+DR_MOTOR_GAIN = (0.8, 1.2)      # commanded-speed scale
+DR_LATENCY_STEPS = (0, 4)       # control-step latency (exclusive high -> 0..3)
+DIFFICULTY_RANGE = (0.0, 1.0)   # per-episode difficulty; scales cat speed/evasiveness
+CAT_SPEED_SCALE_AT_MAX = 1.6    # cat speed multiplier at difficulty=1.0 (1.0 at difficulty=0)
