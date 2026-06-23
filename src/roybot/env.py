@@ -45,7 +45,7 @@ class RoybotChaseEnv(gym.Env):
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
         self._max_steps = int(round(config.EPISODE_SECONDS * config.CONTROL_HZ))
-        self.cat_xy = np.array([config.BAND_CENTER, 0.0])  # placeholder (Task 7 replaces)
+        self.cat_xy = np.array([config.BAND_CENTER, 0.0])  # default; overwritten in reset() via _sync_cat()
         self._prev_action = np.zeros(2)
         self._latency = 0
         self._action_buf = []
@@ -129,18 +129,20 @@ class RoybotChaseEnv(gym.Env):
             mujoco.mj_step(self.model, self.data)
         self._steps += 1
         st = self._robot_state()
+        cat_prev = self.cat.pos.copy()
         self.cat.step(config.CONTROL_DT, st["pos"])
         self._sync_cat()
-        # NOTE: dist is measured after the cat moves, so approach_rate (prev_dist - dist)
-        # includes the cat's own motion, not only the robot's. Acceptable for Phase 1.
-        dist = self._distance()
+        dist = float(np.linalg.norm(self.cat_xy - st["pos"]))          # current dist (for band)
+        # robot-attributed approach: change in distance to where the cat WAS, due to robot motion only
+        approach_rate = self._prev_dist - float(np.linalg.norm(cat_prev - st["pos"]))
         reward, terms = compute_reward(
-            dist=dist, prev_dist=self._prev_dist, willing=self.cat.willing,
+            dist=dist, approach_rate=approach_rate, willing=self.cat.willing,
             action=action, prev_action=self._prev_action, upright=st["upright"],
         )
         self._prev_dist = dist
         terminated = not st["upright"]
         truncated = self._steps >= self._max_steps
         self._prev_action = action
-        info = {"reward_terms": terms, "willing": self.cat.willing, "dist": dist}
+        info = {"reward_terms": terms, "willing": self.cat.willing,
+                "dist": dist, "approach_rate": approach_rate}
         return self._get_obs(), float(reward), terminated, truncated, info

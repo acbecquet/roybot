@@ -27,6 +27,8 @@ ENGAGE_DECAY = 0.05             # /s natural waning
 CAT_FLEE_SPEED = 0.7            # m/s
 CAT_WANDER_SPEED = 0.1          # m/s
 CAT_DART_PROB = 0.04            # per control step, when willing
+CAT_ARENA_HALF = 2.0            # m — cat position clamped to ±this
+JUKE_RATE_CAP = 0.5             # m/s — cap on approach_rate magnitude for juke reward
 
 # --- termination ---
 TIP_UPRIGHT_MIN = 0.5           # body +z world-component below this => tipped over

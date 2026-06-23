@@ -16,11 +16,10 @@ def _in_band_score(dist: float) -> float:
     return float(np.exp(-(z ** 2)))
 
 
-def compute_reward(*, dist, prev_dist, willing, action, prev_action, upright):
+def compute_reward(*, dist, approach_rate, willing, action, prev_action, upright):
     w = config.REWARD_WEIGHTS
     a = np.asarray(action, dtype=float)
     pa = np.asarray(prev_action, dtype=float)
-    approach_rate = prev_dist - dist  # >0 means getting closer
 
     terms = {k: 0.0 for k in w}
 
@@ -28,7 +27,7 @@ def compute_reward(*, dist, prev_dist, willing, action, prev_action, upright):
         terms["engage"] = w["engage"] * _in_band_score(dist)
         # juking: reward changing the distance (dynamic play), only while in band
         if config.BAND_MIN <= dist <= config.BAND_MAX:
-            terms["juke"] = w["juke"] * min(abs(approach_rate), 0.5)
+            terms["juke"] = w["juke"] * min(abs(approach_rate), config.JUKE_RATE_CAP)
     else:
         # retreating (approach_rate < 0) is good; approaching is pestering
         terms["give_space"] = w["give_space"] * max(0.0, -approach_rate)

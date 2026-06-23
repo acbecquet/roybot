@@ -11,8 +11,7 @@ def episode_metrics(records):
                 "approach_rate_when_disinterested": 0.0, "tip_count": 0}
     in_band = [config.BAND_MIN <= r["dist"] <= config.BAND_MAX for r in records]
     dists = np.array([r["dist"] for r in records])
-    disint_approach = [max(0.0, r["prev_dist"] - r["dist"])
-                       for r in records if not r["willing"]]
+    disint_approach = [max(0.0, r["approach_rate"]) for r in records if not r["willing"]]
     return {
         "time_in_band": float(np.mean(in_band)),
         "distance_variation": float(np.std(dists)),

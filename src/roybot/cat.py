@@ -59,4 +59,4 @@ class Cat:
 
         self.vel = vel
         self.pos = self.pos + vel * dt
-        self.pos = np.clip(self.pos, -2.0, 2.0)
+        self.pos = np.clip(self.pos, -config.CAT_ARENA_HALF, config.CAT_ARENA_HALF)

@@ -25,7 +25,7 @@ def test_numpy_policy_matches_sb3(tmp_path):
 def test_infer_imports_only_numpy():
     import roybot.infer as m
     src = open(m.__file__).read()
-    assert "import torch" not in src and "stable_baselines3" not in src
+    assert "torch" not in src and "stable_baselines3" not in src
 
 def test_inference_is_fast_enough_for_50hz(tmp_path):
     # operationalizes spec success-criterion #5: tiny MLP must run well within the

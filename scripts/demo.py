@@ -1,7 +1,6 @@
 # scripts/demo.py
 """Evaluate / visualize the trained chase policy against the moody cat."""
 import argparse
-import numpy as np
 
 from roybot.env import RoybotChaseEnv
 from roybot.infer import NumpyPolicy
@@ -10,14 +9,13 @@ from roybot.metrics import episode_metrics
 
 def _rollout(env, policy, record, view_handle=None):
     obs, _ = env.reset()
-    prev_dist = env._distance()
     done = False
     while not done:
         action = policy.act(obs)
         obs, _, term, trunc, info = env.step(action)
         record.append({"dist": info["dist"], "willing": info["willing"],
-                       "prev_dist": prev_dist, "upright": env._robot_state()["upright"]})
-        prev_dist = info["dist"]
+                       "approach_rate": info["approach_rate"],
+                       "upright": env._robot_state()["upright"]})
         if view_handle is not None:
             view_handle.sync()
         done = term or trunc
