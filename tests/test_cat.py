@@ -53,3 +53,37 @@ def test_deterministic_under_fixed_seed():
     for _ in range(30):
         a.step(0.02, robot); b.step(0.02, robot)
     assert np.allclose(a.pos, b.pos) and a.engagement == b.engagement
+
+def test_modes_appear_during_willing_play():
+    c = make_cat(3); c.reset()
+    seen = set()
+    for _ in range(800):
+        c.engagement = 0.9                 # keep her willing
+        c.pos = np.array([0.0, 0.0])        # re-pin mid-band each step
+        c.step(0.02, np.array([config.BAND_CENTER, 0.0]))
+        seen.add(c.mode)
+    assert {"flee", "rest"}.isdisjoint(seen)          # not crowded, willing -> play modes only
+    assert len(seen & {"stalk", "pounce", "bat", "dart"}) >= 2  # variety
+
+def test_pounce_moves_toward_robot():
+    c = make_cat(0); c.reset()
+    c.pos = np.array([0.0, 0.0]); c.engagement = 0.9
+    c.mode = "pounce"; c._mode_timer = 5.0            # hold pounce
+    robot = np.array([0.3, 0.0])
+    c.step(0.02, robot)
+    assert np.dot(c.vel, robot - np.array([0.0, 0.0])) > 0   # velocity has a toward-robot component
+
+def test_speed_scale_scales_motion():
+    a, b = make_cat(5), make_cat(5)
+    a.reset(); b.reset()
+    a.speed_scale = 1.0; b.speed_scale = 2.0
+    robot = np.array([0.3, 0.0])
+    for _ in range(5):
+        a.engagement = 0.9; b.engagement = 0.9
+        a.step(0.02, robot); b.step(0.02, robot)
+    assert np.linalg.norm(b.vel) > np.linalg.norm(a.vel)
+
+def test_personality_sampled_in_reset():
+    c = make_cat(0); c.reset()
+    assert config.CAT_SKITTISHNESS_RANGE[0] <= c._skittishness <= config.CAT_SKITTISHNESS_RANGE[1]
+    assert config.CAT_ATTENTION_RANGE[0] <= c._attention <= config.CAT_ATTENTION_RANGE[1]
