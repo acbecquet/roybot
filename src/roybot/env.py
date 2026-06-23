@@ -53,6 +53,7 @@ class RoybotChaseEnv(gym.Env):
         self._action_buf = []
         self._motor_gain = 1.0
         self._steps = 0
+        self.difficulty = 0.0
 
     # --- helpers ---
     def _robot_state(self):
@@ -92,12 +93,14 @@ class RoybotChaseEnv(gym.Env):
     def _apply_domain_randomization(self):
         if not self.domain_randomize:
             self._motor_gain, self._latency = 1.0, 0
+            self.difficulty = 0.0
             return
-        self.model.body_mass[:] = self._base_mass * self.rng.uniform(0.8, 1.2)
+        self.model.body_mass[:] = self._base_mass * self.rng.uniform(*config.DR_MASS)
         self.model.geom_friction[:, 0] = np.clip(
-            self._base_friction[:, 0] * self.rng.uniform(0.7, 1.3), 0.01, None)
-        self._motor_gain = float(self.rng.uniform(0.85, 1.15))
-        self._latency = int(self.rng.integers(0, 3))  # 0..2 control steps
+            self._base_friction[:, 0] * self.rng.uniform(*config.DR_FRICTION), 0.01, None)
+        self._motor_gain = float(self.rng.uniform(*config.DR_MOTOR_GAIN))
+        self._latency = int(self.rng.integers(*config.DR_LATENCY_STEPS))
+        self.difficulty = float(self.rng.uniform(*config.DIFFICULTY_RANGE))
 
     # --- gym API ---
     def reset(self, *, seed=None, options=None):
@@ -112,6 +115,7 @@ class RoybotChaseEnv(gym.Env):
         self._steps = 0
         self.cat.rng = self.rng
         self.cat.reset()
+        self.cat.speed_scale = (1.0 + self.difficulty * (config.CAT_SPEED_SCALE_AT_MAX - 1.0)) if self.domain_randomize else 1.0
         self._sync_cat()
         self._prev_dist = self._distance()
         self._stack.clear()

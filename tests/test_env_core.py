@@ -33,3 +33,18 @@ def test_time_limit_truncates():
         if trunc:
             break
     assert trunc and steps == 1000  # EPISODE_SECONDS(20) * CONTROL_HZ(50)
+
+def test_difficulty_sets_cat_speed_scale_and_varies():
+    from roybot import config
+    scales = set()
+    for s in range(8):
+        env = RoybotChaseEnv(domain_randomize=True, seed=s)
+        env.reset(seed=s)
+        assert 1.0 <= env.cat.speed_scale <= config.CAT_SPEED_SCALE_AT_MAX + 1e-9
+        scales.add(round(env.cat.speed_scale, 3))
+    assert len(scales) >= 3   # difficulty actually varies across episodes
+
+def test_no_dr_keeps_baseline_difficulty():
+    env = RoybotChaseEnv(domain_randomize=False, seed=0)
+    env.reset(seed=0)
+    assert env.cat.speed_scale == 1.0
