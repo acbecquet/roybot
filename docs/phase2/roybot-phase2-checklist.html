@@ -126,13 +126,14 @@
   <section>
     <h2>1 · Procure the BOM <span class="count" data-count></span></h2>
     <p class="lead">Spec §5 deltas vs GrowBot. Order everything here in one go — this is the shipping wait.</p>
+    <p class="lead" style="background:var(--accent-soft);border:1px solid var(--line);border-radius:9px;padding:9px 12px"><b>Chassis bought:</b> Adafruit 3216 mini round kit (arriving ~2 days) — includes the aluminum frame, 2 DC motors, 2 wheels, and the caster ball. The motor / wheel / caster lines below are <b>covered by the kit</b>; only catch is no encoders (drive open-loop first, add later for docking).</p>
     <ul>
-      <li><label class="row"><input type="checkbox" data-key="b-motors"><span class="t">2× N20 gearmotor <em>with encoder</em></span></label>
-        <p class="hint">Encoders are required (closed-loop speed + odometry for docking later). Use the ratio from §0.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="b-motors"><span class="t">Drive motors <em>(in the 3216 kit — DC, no encoder)</em></span></label>
+        <p class="hint">The kit's 3–6 V DC motors run fine off your TB6612. No encoders → drive open-loop first; add N20-with-encoder later for closed-loop speed + odometry (docking #6).</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-hbridge"><span class="t">TB6612FNG dual H-bridge breakout</span></label>
         <p class="hint">Chosen over DRV8833 for higher efficiency at this scale.</p></li>
-      <li><label class="row"><input type="checkbox" data-key="b-wheels"><span class="t">Wheels per §0 — 2 drive + caster, <em>or</em> 4-wheel set</span></label>
-        <p class="hint">Match the floor decision. Caster/ball for hard floors; 4-wheel tank for carpet.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="b-wheels"><span class="t">Wheels + caster ball <em>(in the 3216 kit)</em></span></label>
+        <p class="hint">2 drive wheels + the metal caster ball ship in the kit — matches the sim's 2-wheels-plus-caster layout. This is the hard-floor config.</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-lure"><span class="t">Captive lure materials <em>(#1 safety item)</em></span></label>
         <p class="hint">Feather/pom on a short (~10–20 cm) rigid or braided arm — <b>no free end</b>, internally over-molded. No loose string, ever.</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-batt"><span class="t">LiPo battery (1S/2S per §0) + connector</span></label>
@@ -144,7 +145,7 @@
       <li><label class="row"><input type="checkbox" data-key="b-misc"><span class="t">Wire, JST connectors, headers, inline fuse</span></label>
         <p class="hint">Plus heat-shrink. Fuse/inline protection on the battery lead.</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-have"><span class="t">Verify reused parts in hand (GrowBot carry-overs)</span></label>
-        <p class="hint">Pi Zero 2 W, MPU-6050 IMU, OV5647 cam, WS2812 ring, MAX98357A amp + speaker, INMP441 mic, microSD.</p></li>
+        <p class="hint">Pi Zero 2 W, MPU-6050 IMU, OV5647 cam, WS2812 ring, MAX98357A amp + speaker, INMP441 mic, microSD. Plus the Adafruit 3216 chassis when it lands.</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-skip"><span class="t">Do <em>not</em> reorder dropped parts</span></label>
         <p class="hint">Removed vs GrowBot: 2× SCS0009 servos, 1 kΩ resistor, MT3608 boost. The servo bus is gone.</p></li>
       <li><label class="row"><input type="checkbox" data-key="b-tools"><span class="t">Tools on hand</span></label>
@@ -155,11 +156,11 @@
 
   <!-- ============ 2 ============ -->
   <section>
-    <h2>2 · Print the chassis (PETG) <span class="count" data-count></span></h2>
-    <p class="lead">Buildable while parts ship — model/print around the motors + battery you chose.</p>
+    <h2>2 · Print the cover, shroud &amp; lure boom (PETG) <span class="count" data-count></span></h2>
+    <p class="lead">The base chassis is the bought 3216 — you only print what sits on top: the electronics cover, wheel shroud, and captive-lure boom. Easiest to model these <em>around</em> the real hardware once it's mounted.</p>
     <ul>
-      <li><label class="row"><input type="checkbox" data-key="p-model"><span class="t">Model chassis around motors + battery</span></label>
-        <p class="hint">Low CG so it can't easily flip (or shaped to self-right). Size to the actual parts, not guesses.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p-model"><span class="t">Model a top cover + wheel shroud over the mounted electronics</span></label>
+        <p class="hint">Keep CG low / self-righting. Size to the real 3216 + parts, not guesses.</p></li>
       <li><label class="row"><input type="checkbox" data-key="p-print"><span class="t">Print in PETG; thick walls at impact corners</span></label>
         <p class="hint">Compliant mounts for the PCB/battery so play impacts don't crack solder joints.</p></li>
       <li><label class="row"><input type="checkbox" data-key="p-gaps"><span class="t">Verify pinch gaps (ISO 13854)</span></label>
