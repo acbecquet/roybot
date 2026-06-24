@@ -114,8 +114,8 @@
         <p class="hint">Hard floors &rarr; <b>2 drive wheels + 1 caster/ball</b>. Carpet &rarr; <b>4-wheel tank</b> for grip. This changes the wheel order below.</p></li>
       <li><label class="row"><input type="checkbox" data-key="d-power"><span class="t">Quick power budget &rarr; battery cell count</span></label>
         <p class="hint">2 DC motors draw far less than the old 4-servo plan. Pick <b>1S or 2S LiPo</b> + motor voltage. This couples to the dock charger (#6): 1S&rarr;TP4056, 2S&rarr;BMS.</p></li>
-      <li><label class="row"><input type="checkbox" data-key="d-ratio"><span class="t">Pick the N20 gear ratio</span></label>
-        <p class="hint">Speed vs torque balance for a small fast cat-toy. Higher RPM = darty; more torque = won't stall on carpet/edges.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="d-ratio"><span class="t">Pick the N20 gear ratio <em>(RESOLVED: 100:1, 60 mm wheel)</em></span></label>
+        <p class="hint">Verified: Pololu HPCB 6V <b>100:1</b> + <b>60 mm</b> wheel &rarr; ~0.75 m/s top, strong torque for carpet edges. Order the EXTENDED-shaft variant for the encoder.</p></li>
       <li><label class="row"><input type="checkbox" data-key="d-5v"><span class="t">Choose the Pi 5 V regulator</span></label>
         <p class="hint">Dedicated buck regulator + bulk cap so motor surges can't brown out the Pi (spec §4A). Size it for Pi Zero 2 W + peripherals.</p></li>
     </ul>

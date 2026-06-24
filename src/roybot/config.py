@@ -7,10 +7,10 @@ N_SUBSTEPS = round((1.0 / CONTROL_HZ) / SIM_TIMESTEP)  # = 10
 EPISODE_SECONDS = 20.0
 CONTROL_DT = 1.0 / CONTROL_HZ
 
-# --- drivetrain geometry ---
-WHEEL_RADIUS = 0.025            # m
-WHEEL_BASE = 0.09               # m (left-right wheel separation)
-MAX_WHEEL_RAD_S = 30.0          # rad/s motor speed cap
+# --- drivetrain geometry (Pololu HPCB 6V 100:1 N20 + 60 mm wheel on the 3216, 2S; verified spec) ---
+WHEEL_RADIUS = 0.03             # m (60 mm wheel)
+WHEEL_BASE = 0.11               # m (left-right wheel track, N20-mounted on the 3216)
+MAX_WHEEL_RAD_S = 25.05         # rad/s = 239 rpm loaded (330 rpm free-run * 0.725 derate)
 
 # --- action scaling (policy outputs in [-1, 1]) ---
 ACTION_VFWD_MAX = 0.6           # m/s

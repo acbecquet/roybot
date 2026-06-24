@@ -4,7 +4,9 @@
        plain Euler at dt=2ms makes the velocity-servo'd wheel explode. -->
   <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
   <default>
-    <joint damping="0.01" armature="0.001"/>
+    <!-- low wheel damping so the realistic 0.15 N.m torque limit (not artificial drag)
+         is what caps acceleration; armature + implicitfast keep the wheel DOF stable. -->
+    <joint damping="0.001" armature="0.001"/>
     <geom friction="1 0.1 0.01"/>
   </default>
 
@@ -14,20 +16,22 @@
 
     <body name="chassis" pos="0 0 0.03">
       <freejoint name="root"/>
-      <geom name="chassis_geom" type="box" size="0.05 0.04 0.015" mass="0.30"
+      <!-- round 3216 chassis (~109 mm dia). mass ~0.36 kg body (+wheels+caster ~0.42 kg total);
+           ESTIMATE - refine from the kitchen-scale weight of the assembled bot. -->
+      <geom name="chassis_geom" type="cylinder" size="0.0545 0.015" mass="0.36"
             rgba="0.3 0.45 0.8 1"/>
       <site name="imu" pos="0 0 0" size="0.005"/>
 
-      <body name="left_wheel" pos="0 0.045 -0.005">
+      <body name="left_wheel" pos="0 0.055 0.0">
         <joint name="left_wheel_joint" type="hinge" axis="0 1 0"/>
-        <geom type="cylinder" size="0.025 0.008" quat="0.7071 0.7071 0 0"
-              mass="0.02" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
+        <geom type="cylinder" size="0.03 0.008" quat="0.7071 0.7071 0 0"
+              mass="0.025" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
       </body>
 
-      <body name="right_wheel" pos="0 -0.045 -0.005">
+      <body name="right_wheel" pos="0 -0.055 0.0">
         <joint name="right_wheel_joint" type="hinge" axis="0 1 0"/>
-        <geom type="cylinder" size="0.025 0.008" quat="0.7071 0.7071 0 0"
-              mass="0.02" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
+        <geom type="cylinder" size="0.03 0.008" quat="0.7071 0.7071 0 0"
+              mass="0.025" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
       </body>
 
       <!-- caster: low-friction ball so the rear slides freely -->
@@ -39,8 +43,10 @@
   </worldbody>
 
   <actuator>
-    <velocity name="left_motor"  joint="left_wheel_joint"  kv="5.0" forcerange="-1 1"/>
-    <velocity name="right_motor" joint="right_wheel_joint" kv="5.0" forcerange="-1 1"/>
+    <!-- forcerange = real 100:1 N20 stall torque ~0.157 N.m (slightly derated) so the
+         policy learns within the torque it will actually have on hardware (sim2real). -->
+    <velocity name="left_motor"  joint="left_wheel_joint"  kv="5.0" forcerange="-0.15 0.15"/>
+    <velocity name="right_motor" joint="right_wheel_joint" kv="5.0" forcerange="-0.15 0.15"/>
   </actuator>
 
   <sensor>

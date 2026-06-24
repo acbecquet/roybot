@@ -34,16 +34,21 @@ ROWS = [
     ("Purchased", "Compute", "  - GPIO headers + adapters + case", 1, "In the Pi setup kit", "(Pi kit)", 0),
 
     # ===== TO BUY - Drivetrain (N20 upgrade, now core) =====
-    ("To buy", "Drivetrain", "N20 gearmotor w/ magnetic encoder, 6 V", 2,
-     "Final drivetrain: closed-loop speed + odometry (needed for docking). Pick gear ratio for speed/torque",
+    ("To buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
+     "Verified pick: ~239 rpm loaded -> 0.75 m/s top @60mm wheel, 1.6 kg-cm stall. EXTENDED shaft is REQUIRED so the encoder mounts on the rear",
+     "Pololu", 18),
+    ("To buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
+     "Hall A/B, 12 CPR/motor-rev -> 1200 CPR/wheel-rev at 100:1 (already x4-decoded; do NOT x4 again). VCC = 3.3V",
      "Pololu", 9),
     ("To buy", "Drivetrain", "N20 motor bracket / mount", 2,
      "Mount N20s to the 3216 frame - likely needs a small printed adapter to fit the frame's hole pattern",
      "Pololu / Amazon", 3),
-    ("To buy", "Drivetrain", "Wheel for N20 (3 mm D-shaft), ~60 mm", 2,
-     "The 3216 wheels don't fit the N20 shaft", "Pololu / Amazon", 4),
+    ("To buy", "Drivetrain", "Wheel for N20 (3 mm D-shaft), 60 mm OD", 2,
+     "60mm chosen so loaded top speed lands at 0.75 m/s (65mm overshoots). 3216 wheels don't fit the N20 shaft",
+     "Pololu / Amazon", 4),
     ("To buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
-     "Motor driver (efficient; chosen over DRV8833/L298N)", "Adafruit / Pololu", 5),
+     "Motor driver. Run 2S via firmware V_batt duty comp (~6V avg), PWM >=20kHz, encoder-static stall cutoff",
+     "Adafruit / Pololu", 5),
 
     # ===== TO BUY - Sensors =====
     ("To buy", "Sensors", "MPU-6050 IMU", 1, "Roll/pitch + tip/stall reflexes; proprioception for the policy",
