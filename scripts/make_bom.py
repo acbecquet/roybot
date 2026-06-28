@@ -1,14 +1,15 @@
 # scripts/make_bom.py
-"""One-shot generator for the Phase 2 Bill of Materials spreadsheet.
+"""One-shot generator for the Phase 2 first-prototype Bill of Materials.
 
-Consolidates the BOM (previously scattered across the spec §5 and the checklist)
-into one buyable docs/phase2/roybot-BOM.xlsx for the FINAL product. Split into
-Purchased vs To-buy with live subtotals; Status column drives the color + totals.
+Scoped to a GrowBot-style first prototype (drive + chase brain + GrowBot guts +
+portable power); the self-charging dock and cliff/bump sensors are deferred to
+iteration 2. Reconciles what becqu already has against GrowBot's BOM
+(https://github.com/britcruise9/GrowBot/blob/main/BOM.md) and the locked Roybot
+N20 drivetrain spec. Power follows GrowBot's 1S->TP4056->MT3608 topology, dual-
+rail (5.1V Pi / 6.0V motors) so the motors stay at the sim-tuned 6V.
 
 Run once:  .venv/Scripts/python scripts/make_bom.py
-After that the .xlsx is hand-maintained (flip Status as you order, edit prices/
-links). This script is the starting point, not a live source of truth. Prices
-are rough ballparks for budgeting, NOT quotes.
+After that the .xlsx is hand-maintained. Prices are rough ballparks, not quotes.
 """
 from pathlib import Path
 
@@ -17,98 +18,79 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
 
-OUT = Path("docs/phase2/roybot-BOM.xlsx")
-STATUSES = ["Purchased", "To buy"]
+OUT = Path("docs/phase2/roybot-prototype-BOM.xlsx")
+STATUSES = ["Buy", "Print", "Have", "Spare"]
 
-# (Status, Subsystem, Component, Qty, Spec / purpose, Suggested source, Est. unit USD)
+# (Status, Group, Component, Qty, Spec / note, Suggested source, Est. unit USD)
 ROWS = [
-    # ===== PURCHASED / ON HAND =====
-    ("Purchased", "Bot", "Adafruit 3216 Mini Round Robot Chassis Kit", 1,
-     "The bot body: round aluminum frame + caster ball. (Its 2 DC motors + 2 wheels are now SPARE - superseded by the N20 upgrade.)",
-     "Adafruit / reseller", 20),
-    ("Purchased", "Compute", "Raspberry Pi Zero 2 W - full setup kit", 1,
-     "The brain (runs the policy @50 Hz). Setup kit covers the sub-items below",
-     "(owned)", 35),
-    ("Purchased", "Compute", "  - microSD card (preloaded)", 1, "In the Pi setup kit", "(Pi kit)", 0),
-    ("Purchased", "Compute", "  - USB power supply", 1, "In the Pi setup kit", "(Pi kit)", 0),
-    ("Purchased", "Compute", "  - GPIO headers + adapters + case", 1, "In the Pi setup kit", "(Pi kit)", 0),
+    # ===== BUY - Drivetrain (Roybot N20 spec; replaces GrowBot's servos) =====
+    ("Buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
+     "Verified pick (~0.75 m/s, strong torque). EXTENDED shaft is REQUIRED so the encoder mounts. Replaces the 3216's spare DC motors", "Pololu", 18),
+    ("Buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
+     "1200 CPR/wheel-rev at 100:1 (already x4-decoded; don't x4 again). VCC=3.3V. Closed-loop speed + odometry", "Pololu", 9),
+    ("Buy", "Drivetrain", "60 mm wheel for N20 (3 mm D-shaft), rubber tire", 2,
+     "3216 wheels don't fit the N20 shaft. Buy rubber-tired (don't print - need grip)", "Pololu / Amazon", 4),
+    ("Buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
+     "Motor driver. VM = 6V motor rail, VCC = 3.3V, PWM >=20 kHz, encoder-static stall cutoff", "Adafruit / Pololu", 5),
 
-    # ===== TO BUY - Drivetrain (N20 upgrade, now core) =====
-    ("To buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
-     "Verified pick: ~239 rpm loaded -> 0.75 m/s top @60mm wheel, 1.6 kg-cm stall. EXTENDED shaft is REQUIRED so the encoder mounts on the rear",
-     "Pololu", 18),
-    ("To buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
-     "Hall A/B, 12 CPR/motor-rev -> 1200 CPR/wheel-rev at 100:1 (already x4-decoded; do NOT x4 again). VCC = 3.3V",
-     "Pololu", 9),
-    ("To buy", "Drivetrain", "N20 motor bracket / mount", 2,
-     "Mount N20s to the 3216 frame - likely needs a small printed adapter to fit the frame's hole pattern",
-     "Pololu / Amazon", 3),
-    ("To buy", "Drivetrain", "Wheel for N20 (3 mm D-shaft), 60 mm OD", 2,
-     "60mm chosen so loaded top speed lands at 0.75 m/s (65mm overshoots). 3216 wheels don't fit the N20 shaft",
-     "Pololu / Amazon", 4),
-    ("To buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
-     "Motor driver. Run 2S via firmware V_batt duty comp (~6V avg), PWM >=20kHz, encoder-static stall cutoff",
-     "Adafruit / Pololu", 5),
+    # ===== BUY - Compute & sensing =====
+    ("Buy", "Compute", "microSD card, 32 GB Class 10 / A1", 1,
+     "NOT in your Pi kit! Raspberry Pi OS Lite 64-bit (GrowBot #2)", "Amazon", 8),
+    ("Buy", "Sensing", "OV5647 camera - Pi ZERO version (narrow 22->15 CSI ribbon)", 1,
+     "MUST be the Pi Zero narrow-ribbon version, NOT the standard camera ribbon (GrowBot #7)", "Amazon", 12),
+    ("Buy", "Sensing", "MPU-6050 IMU (GY-521)", 1,
+     "Tip/stall reflexes + proprioception. I2C 0x68, 3.3V (GrowBot #6)", "Amazon", 4),
 
-    # ===== TO BUY - Sensors =====
-    ("To buy", "Sensors", "MPU-6050 IMU", 1, "Roll/pitch + tip/stall reflexes; proprioception for the policy",
-     "Amazon", 4),
-    ("To buy", "Sensors", "OV5647 camera (Pi-compatible)", 1, "Cat tracking (perception, #2)", "Amazon", 10),
-    ("To buy", "Sensors", "Pi Zero CSI ribbon (mini -> standard)", 1, "Pi Zero needs the narrow CSI cable",
-     "Adafruit", 3),
-    ("To buy", "Sensors", "IR reflectance cliff/edge sensor", 2,
-     "Edge detect -> back off (safety floor). Stops falls off tables/stairs", "Amazon", 2),
-    ("To buy", "Sensors", "Bump microswitch (lever)", 2, "Front bump detect -> back off", "Amazon", 1),
+    # ===== BUY - Voice & lights (GrowBot guts) =====
+    ("Buy", "Voice/Lights", "INMP441 I2S microphone", 1, "Wake-word / voice in. 3.3V (GrowBot #8)", "Amazon", 4),
+    ("Buy", "Voice/Lights", "MAX98357A I2S amplifier", 1, "Speaker driver, 3.2W class-D (GrowBot #9)", "Amazon", 5),
+    ("Buy", "Voice/Lights", "Speaker 8 ohm, 0.5-3 W (small)", 1, "Audio out (GrowBot #10)", "Amazon", 2),
+    ("Buy", "Voice/Lights", "WS2812B LED ring, 7 px, 5 V", 1, "Expressive 'personality' output (GrowBot #11)", "Amazon", 3),
 
-    # ===== TO BUY - Audio / expression (companion layer #5) =====
-    ("To buy", "Audio", "INMP441 I2S microphone", 1, "Wake-word / voice in (#5)", "Amazon", 5),
-    ("To buy", "Audio", "MAX98357A I2S amplifier", 1, "Speaker driver (voice reports #5)", "Adafruit", 6),
-    ("To buy", "Audio", "Speaker 4-8 ohm (small)", 1, "Audio out", "Amazon", 2),
-    ("To buy", "Expression", "WS2812 RGB LED ring", 1, "Expressive 'personality' output", "Amazon", 8),
+    # ===== BUY - Power (GrowBot topology, dual-rail for the 6V N20) =====
+    ("Buy", "Power", "18650 Li-ion cell, 2500-3500 mAh (1S)", 1,
+     "Main battery. Bigger than GrowBot's 1S for N20 headroom + runtime (GrowBot #12)", "Amazon", 6),
+    ("Buy", "Power", "18650 battery holder", 1, "Cell holder + contacts", "Amazon", 2),
+    ("Buy", "Power", "TP4056 USB-C charge + protect module", 1,
+     "In-place recharging; get the PROTECTED version with OUT+/OUT- (GrowBot #13)", "Amazon", 2),
+    ("Buy", "Power", "MT3608 boost module (x2)", 2,
+     "Dual-rail: set one to ~5.1V (Pi+logic+amp+LED), one to ~6.0V (motors). Isolates Pi from motor surge; GrowBot note #5 endorses a 2nd MT3608 for motors (GrowBot #14)", "Amazon", 2),
+    ("Buy", "Power", "Electrolytic cap 470-1000 uF, 10 V+", 2, "One across each rail to cover surge dips (GrowBot #15)", "Amazon", 1),
+    ("Buy", "Power", "SPST power switch", 1, "Main cutoff (GrowBot #16)", "Amazon", 2),
 
-    # ===== TO BUY - Power =====
-    ("To buy", "Power", "LiPo battery 2S 7.4 V (small)", 1,
-     "Main power for the 6 V N20s (PWM-limited). Couples to the charger/BMS choice", "HobbyKing / Amazon", 12),
-    ("To buy", "Power", "5 V buck regulator (3 A)", 1, "Dedicated Pi rail; isolates Pi from motor surges",
-     "Pololu / Amazon", 5),
-    ("To buy", "Power", "Bulk capacitor 470-1000 uF", 2, "Brownout protection (Pi + motor rails)", "Amazon", 1),
-    ("To buy", "Power", "2S LiPo BMS / protection + charge board", 1,
-     "Safe charge/discharge; this is the on-bot side of docking", "Amazon", 4),
-    ("To buy", "Power", "XT30 / JST battery connector set", 1, "Battery + charge connectors", "Amazon", 3),
-    ("To buy", "Power", "Inline fuse + holder", 1, "Battery short protection", "Amazon", 2),
-    ("To buy", "Power", "Power switch (SPST)", 1, "Main cutoff", "Amazon", 2),
+    # ===== BUY - Build / safety =====
+    ("Buy", "Build", "Hookup wire + Dupont jumpers", 1, "Wire per the GrowBot diagram + the TB6612", "Amazon", 8),
+    ("Buy", "Build", "3M double-sided mounting squares", 1, "GrowBot's no-screw board mounting (or print mounts)", "Amazon", 5),
+    ("Buy", "Build", "PETG filament (known-safe), 1 spool", 1, "For the printed parts below - skip if your printer came with filament", "Amazon", 25),
+    ("Buy", "Safety", "Captive lure (feather/pom on short rigid/braided arm)", 1,
+     "#1 cat-safety item: NO free end, over-molded. Attended play only", "craft / Amazon", 5),
 
-    # ===== TO BUY - Self-charging dock (#6) =====
-    ("To buy", "Dock", "Pogo-pin charging contacts (bot + dock pair)", 1,
-     "Spring-pin charge contacts for self-docking", "Amazon", 6),
-    ("To buy", "Dock", "TSOP38238 IR receiver", 1, "On the bot: IR homing to the dock", "Amazon", 2),
-    ("To buy", "Dock", "IR LED beacon + driver", 1, "On the dock: homing beacon", "Amazon", 3),
-    ("To buy", "Dock", "Dock PSU (5 V / 2 A) + barrel jack", 1, "Powers the charging dock", "Amazon", 8),
-    ("To buy", "Dock", "Dock base + alignment funnel (PETG print)", 1, "Passive funnel; printed", "(PETG)", 0),
+    # ===== PRINT (you have a printer) =====
+    ("Print", "Drivetrain", "N20 -> 3216 motor-mount adapter", 2,
+     "The 3216's mounts fit its DC motors, not N20s - print an adapter bracket", "3D print", 0),
+    ("Print", "Structure", "Top cover + wheel shroud", 1,
+     "Cat-safety: shroud wheel gaps (<4-6 mm or >25 mm), cover the electronics", "3D print", 0),
+    ("Print", "Structure", "Captive-lure boom arm", 1, "Rigid arm holding the lure with no free end", "3D print", 0),
+    ("Print", "Structure", "Battery + board mounts (optional)", 1, "Or just use the 3M squares above", "3D print", 0),
 
-    # ===== TO BUY - Structure / cat-safety =====
-    ("To buy", "Cat-safety", "Captive lure (feather/pom on short rigid/braided arm)", 1,
-     "#1 hazard control: NO free end, over-molded. No loose string ever", "craft + over-mold", 5),
-    ("To buy", "Structure", "PETG filament (known-safe) spool", 1,
-     "Cover / wheel shroud / lure boom / dock funnel / N20 adapter prints", "Amazon", 25),
-    ("To buy", "Structure", "Heat-set inserts + screws", 1, "Tool-locked battery hatch; captive fasteners",
-     "Amazon", 8),
+    # ===== HAVE (don't buy) =====
+    ("Have", "Compute", "Raspberry Pi Zero 2 W", 1, "In your Pi kit", "(have)", 0),
+    ("Have", "Compute", "2x20 GPIO header", 1, "In your Pi kit - needs SOLDERING onto the Pi", "(have)", 0),
+    ("Have", "Compute", "Cables incl. USB power cable", 1, "In your Pi kit (bench power/flashing; on-robot the Pi runs off the 5V rail)", "(have)", 0),
+    ("Have", "Chassis", "Adafruit 3216 chassis - frame + caster ball + hardware", 1, "Your base kit = the robot body", "(have)", 0),
 
-    # ===== TO BUY - Wiring / consumables =====
-    ("To buy", "Wiring", "Silicone hookup wire (assorted AWG)", 1, "Motor + logic wiring", "Amazon", 8),
-    ("To buy", "Wiring", "JST / Dupont connector kit", 1, "Removable connections", "Amazon", 6),
-    ("To buy", "Wiring", "Standoffs / M2.5 hardware kit", 1, "Mount Pi + boards to the chassis", "Amazon", 6),
-    ("To buy", "Wiring", "Heat-shrink assortment", 1, "Insulation", "Amazon", 5),
+    # ===== SPARE (have, unused in this build) =====
+    ("Spare", "Chassis", "3216 bundled DC motors + 2 wheels", 1, "Superseded by the N20 drivetrain - keep as spares", "(have)", 0),
 ]
 
 TOOLS = [
-    ("Soldering iron + solder", "Wiring the H-bridge, headers, power, encoders"),
-    ("Multimeter", "Continuity, voltage, current checks"),
-    ("Digital calipers", "The 4 sim-refit measurements (wheel OD, track, caster offset)"),
+    ("Soldering iron + solder", "REQUIRED - solder the 40-pin header to the Pi + wire boards/motors (GrowBot: 'you will need to solder a 40-pin header')"),
+    ("Multimeter", "REQUIRED - set each MT3608's output voltage BEFORE connecting the Pi (GrowBot setup note #1; they ship turned up high)"),
+    ("3D printer", "You have it - for the Print rows"),
+    ("Digital calipers", "Measure real wheel OD + track for the sim refit"),
     ("Kitchen scale", "Assembled weight for the sim refit"),
-    ("3D printer", "Cover / shroud / lure boom / dock funnel / N20 adapter (PETG)"),
+    ("Small screwdriver / hex set", "Assembly"),
     ("Wire strippers / flush cutters", "Wiring"),
-    ("Small screwdriver + hex set", "Assembly"),
 ]
 
 # ---- styling ----
@@ -120,8 +102,10 @@ BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 WRAP = Alignment(vertical="top", wrap_text=True)
 TOP = Alignment(vertical="top")
 MONEY = "$#,##0.00"
-GREEN = PatternFill("solid", fgColor="E3F2E5")
-RED = PatternFill("solid", fgColor="FBE3E0")
+BUY = PatternFill("solid", fgColor="FBE3E0")     # red  = buy
+HAVE = PatternFill("solid", fgColor="E3F2E5")    # green = have
+PRINT = PatternFill("solid", fgColor="E1ECF7")   # blue = print
+SPARE = PatternFill("solid", fgColor="ECECEC")   # grey = spare
 
 
 def build():
@@ -130,18 +114,18 @@ def build():
     ws.title = "BOM"
 
     ws.merge_cells("A1:I1")
-    ws["A1"] = "Roybot - Final-Product Bill of Materials"
+    ws["A1"] = "Roybot - First-Prototype Bill of Materials"
     ws["A1"].font = TITLE_FONT
     ws.merge_cells("A2:I2")
-    ws["A2"] = ("Everything for the complete bot + self-charging dock. Flip Status (Purchased / To buy) as you "
-                "order - colors and the totals below follow. Prices are rough ballparks, not quotes. "
-                "Note: N20 mounting to the 3216 frame may need a small printed adapter.")
+    ws["A2"] = ("GrowBot-style first prototype (drive + chase brain + guts + portable power). Dock and "
+                "cliff/bump sensors deferred to iteration 2. RED = buy (your shopping list), BLUE = 3D-print, "
+                "GREEN = already have, GREY = spare. Power = 1S->TP4056->dual MT3608 (5.1V Pi / 6.0V motors). "
+                "Prices are rough ballparks, not quotes.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
-    ws.row_dimensions[2].height = 42
+    ws.row_dimensions[2].height = 54
 
-    # Summary block (forward-references the data range below)
-    headers = ["Status", "Subsystem", "Component", "Qty", "Key spec / purpose",
+    headers = ["Status", "Group", "Component", "Qty", "Spec / note",
                "Suggested source", "Est. unit (USD)", "Est. line (USD)", "Link / Part # (you fill)"]
     head_row = 8
     first_data = head_row + 1
@@ -149,19 +133,20 @@ def build():
     status_rng = f"A{first_data}:A{last_data}"
     line_rng = f"H{first_data}:H{last_data}"
 
-    def summary(row, label, formula, color=None, bold=True):
+    def summary(row, label, formula, color):
         c = ws.cell(row=row, column=6, value=label)
-        c.font = Font(bold=bold)
+        c.font = Font(bold=True)
         c.alignment = Alignment(horizontal="right")
         v = ws.cell(row=row, column=8, value=formula)
         v.number_format = MONEY
-        v.font = Font(bold=bold, color=color or "000000")
+        v.font = Font(bold=True, color=color)
 
-    summary(4, "Already spent (purchased):", f'=SUMIF({status_rng},"Purchased",{line_rng})', "2E7D32")
-    summary(5, "Still to buy:", f'=SUMIF({status_rng},"To buy",{line_rng})', "B3261E")
-    summary(6, "FINAL-PRODUCT TOTAL:", f"=SUM({line_rng})")
+    summary(4, "TO BUY (your shopping list):", f'=SUMIF({status_rng},"Buy",{line_rng})', "B3261E")
+    summary(5, "Already have / spare:", f'=SUMIF({status_rng},"Have",{line_rng})+SUMIF({status_rng},"Spare",{line_rng})', "2E7D32")
+    ws.cell(row=6, column=6, value="Print count:").font = Font(bold=True)
+    ws.cell(row=6, column=6).alignment = Alignment(horizontal="right")
+    ws.cell(row=6, column=8, value=f'=COUNTIF({status_rng},"Print")').font = Font(bold=True, color="1F3A8A")
 
-    # Header
     for c, h in enumerate(headers, start=1):
         cell = ws.cell(row=head_row, column=c, value=h)
         cell.fill = HEAD_FILL
@@ -169,10 +154,9 @@ def build():
         cell.alignment = Alignment(vertical="center", wrap_text=True)
         cell.border = BORDER
 
-    # Data
-    for i, (status, sub, comp, qty, spec, src, unit) in enumerate(ROWS):
+    for i, (status, grp, comp, qty, spec, src, unit) in enumerate(ROWS):
         r = first_data + i
-        vals = [status, sub, comp, qty, spec, src, unit, f"=D{r}*G{r}", ""]
+        vals = [status, grp, comp, qty, spec, src, unit, f"=D{r}*G{r}", ""]
         for c, val in enumerate(vals, start=1):
             cell = ws.cell(row=r, column=c, value=val)
             cell.border = BORDER
@@ -180,16 +164,16 @@ def build():
             if c in (7, 8):
                 cell.number_format = MONEY
 
-    # Dropdown + color by status
     dv = DataValidation(type="list", formula1='"%s"' % ",".join(STATUSES), allow_blank=True)
     ws.add_data_validation(dv)
     dv.add(status_rng)
-    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"Purchased"'], fill=GREEN))
-    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"To buy"'], fill=RED))
+    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"Buy"'], fill=BUY))
+    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"Have"'], fill=HAVE))
+    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"Print"'], fill=PRINT))
+    ws.conditional_formatting.add(status_rng, CellIsRule(operator="equal", formula=['"Spare"'], fill=SPARE))
 
-    # Filter + widths + freeze
     ws.auto_filter.ref = f"A{head_row}:I{last_data}"
-    widths = [11, 14, 40, 5, 44, 22, 13, 13, 24]
+    widths = [9, 13, 42, 5, 50, 22, 13, 13, 22]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
     ws.freeze_panes = f"A{first_data}"
@@ -197,23 +181,26 @@ def build():
     # Tools sheet
     ts = wb.create_sheet("Tools")
     ts.merge_cells("A1:B1")
-    ts["A1"] = "Tools (not consumed - reference)"
+    ts["A1"] = "Tools (not consumed - check you have these)"
     ts["A1"].font = TITLE_FONT
-    for c, h in enumerate(["Tool", "Used for"], start=1):
+    for c, h in enumerate(["Tool", "Needed for"], start=1):
         cell = ts.cell(row=3, column=c, value=h)
         cell.fill = HEAD_FILL
         cell.font = HEAD_FONT
         cell.border = BORDER
     for i, (tool, use) in enumerate(TOOLS, start=4):
         ts.cell(row=i, column=1, value=tool).border = BORDER
-        ts.cell(row=i, column=2, value=use).border = BORDER
-    ts.column_dimensions["A"].width = 30
-    ts.column_dimensions["B"].width = 56
+        a = ts.cell(row=i, column=2, value=use)
+        a.border = BORDER
+        a.alignment = WRAP
+    ts.column_dimensions["A"].width = 28
+    ts.column_dimensions["B"].width = 70
     ts.freeze_panes = "A4"
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     wb.save(OUT)
-    print(f"wrote {OUT}  ({len(ROWS)} line items)")
+    n_buy = sum(1 for r in ROWS if r[0] == "Buy")
+    print(f"wrote {OUT}  ({len(ROWS)} rows, {n_buy} to buy)")
 
 
 if __name__ == "__main__":
