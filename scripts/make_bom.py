@@ -25,7 +25,7 @@ STATUSES = ["Buy", "Print", "Have", "Spare"]
 ROWS = [
     # ===== BUY - Drivetrain (drive the 3216 kit's own DC motors; N20 deferred) =====
     ("Buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
-     "Motor driver for the 3216's DC motors. VM = 6V motor rail, VCC = 3.3V, PWM >=20 kHz. OPEN-LOOP (no encoders this build)", "Adafruit / Pololu", 5),
+     "Motor driver for the 3216's DC motors. VM = the shared 5V rail, VCC = 3.3V, PWM >=20 kHz. OPEN-LOOP (no encoders this build)", "Adafruit / Pololu", 5),
 
     # ===== BUY - Compute & sensing =====
     ("Buy", "Compute", "microSD card, 32 GB Class 10 / A1", 1,
@@ -43,13 +43,13 @@ ROWS = [
 
     # ===== BUY - Power (GrowBot topology, dual-rail for the 6V N20) =====
     ("Buy", "Power", "18650 Li-ion cell, 2500-3500 mAh (1S)", 1,
-     "Main battery. Bigger than GrowBot's 1S for N20 headroom + runtime (GrowBot #12)", "Amazon", 6),
+     "Main battery (you don't have one). GrowBot uses 800-1200 mAh; a 2500-3500 mAh 18650 gives more runtime (GrowBot #12)", "Amazon", 6),
     ("Buy", "Power", "18650 battery holder", 1, "Cell holder + contacts", "Amazon", 2),
     ("Buy", "Power", "TP4056 USB-C charge + protect module", 1,
      "In-place recharging; get the PROTECTED version with OUT+/OUT- (GrowBot #13)", "Amazon", 2),
-    ("Buy", "Power", "MT3608 boost module (x2)", 2,
-     "Dual-rail: set one to ~5.1V (Pi+logic+amp+LED), one to ~6.0V (motors). Isolates Pi from motor surge; GrowBot note #5 endorses a 2nd MT3608 for motors (GrowBot #14)", "Amazon", 2),
-    ("Buy", "Power", "Electrolytic cap 470-1000 uF, 10 V+", 2, "One across each rail to cover surge dips (GrowBot #15)", "Amazon", 1),
+    ("Buy", "Power", "MT3608 boost module", 1,
+     "Boosts the 1S cell (3.7V) UP to ~5.1V = the single shared 5V rail (Pi + motors + amp + LED), GrowBot V0 style. 3216 motors are 3-6V so 5V is fine (dial to 6V for max speed if ever wanted). Add a 2nd MT3608 for a separate motor rail ONLY if a double-stall reboots the Pi (GrowBot #14)", "Amazon", 2),
+    ("Buy", "Power", "Electrolytic cap 470-1000 uF, 10 V+", 1, "Across the 5V rail to cover motor surge dips (GrowBot #15)", "Amazon", 1),
     ("Buy", "Power", "SPST power switch", 1, "Main cutoff (GrowBot #16)", "Amazon", 2),
 
     # ===== BUY - Build / safety =====
@@ -112,8 +112,8 @@ def build():
     ws.merge_cells("A2:I2")
     ws["A2"] = ("GrowBot-style first prototype, COST-CUT: drive open-loop off the 3216 kit's own DC motors + "
                 "wheels (N20s + encoders = iteration-2 upgrade). Dock + cliff/bump sensors also deferred. "
-                "RED = buy (your shopping list), BLUE = 3D-print, GREEN = already have, GREY = spare. "
-                "Power = 1S->TP4056->dual MT3608 (5.1V Pi / 6.0V motors). Prices are rough ballparks, not quotes.")
+                "RED = buy (your shopping list), BLUE = 3D-print, GREEN = already have. "
+                "Power = 1S 18650 -> TP4056 -> single MT3608 (one ~5.1V rail for everything; 3216 motors are 3-6V). Prices are rough ballparks, not quotes.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
     ws.row_dimensions[2].height = 54
