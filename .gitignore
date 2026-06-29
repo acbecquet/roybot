@@ -9,3 +9,4 @@ runs/
 .pytest_cache/
 .superpowers/
 *.egg-info/
+docs/reference/

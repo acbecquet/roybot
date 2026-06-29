@@ -24,13 +24,9 @@ STAGES = ["A", "B", "C"]
 # (Stage, Status, Group, Component, Qty, Spec / note, Source, Est. unit USD)
 ROWS = [
     # ================= STAGE A — first prototype (buy now) =================
-    # -- Drivetrain (N20 + encoders: closed-loop, stall cutoff, odometry) --
-    ("A", "Buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
-     "Verified pick (~0.75 m/s, strong torque). EXTENDED shaft REQUIRED for the encoder. Cheaper alt: generic GA12-N20 6V w/ integrated encoder (~$12 ea, 2-packs) saves ~$20 - Pololu chosen for spec consistency", "Pololu", 18),
-    ("A", "Buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
-     "1200 CPR/wheel-rev at 100:1 (already x4-decoded). VCC=3.3V. Closed-loop speed (matches sim), stall cutoff, odometry", "Pololu", 9),
-    ("A", "Buy", "Drivetrain", "60 mm wheel for N20 (3 mm D-shaft), rubber tire", 2,
-     "3216 wheels don't fit the N20 shaft. Rubber tire for grip", "Pololu / Amazon", 4),
+    # -- Drivetrain (generic N20 + encoder + wheel kit: closed-loop, min cost) --
+    ("A", "Buy", "Drivetrain", "N20 6V gearmotor w/ hall encoder + wheel (generic kit)", 2,
+     "Generic GA12-N20 6V with INTEGRATED quadrature encoder AND wheel (~$12 ea, 2-packs). Keeps closed-loop speed + stall cutoff + odometry (the critical capability) for ~$20 less than Pololu. Get a 3.3V-logic encoder; calibrate to measured RPM/OD", "Amazon", 12),
     ("A", "Buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
      "Motor driver. VM = 6V motor rail, VCC = 3.3V, PWM >=20 kHz. Closed-loop via encoders + firmware stall cutoff", "Adafruit / Pololu", 5),
     # -- Compute / sensing --
@@ -56,14 +52,13 @@ ROWS = [
     # -- Build / safety --
     ("A", "Buy", "Build", "Hookup wire + Dupont jumpers", 1, "Wire per the GrowBot diagram + the TB6612", "Amazon", 8),
     ("A", "Buy", "Build", "330-470 ohm resistor (WS2812 data line)", 1, "Series resistor on the LED data line (3.3V GPIO -> 5V ring)", "Amazon", 1),
-    ("A", "Buy", "Build", "3M double-sided mounting squares", 1, "GrowBot's no-screw board mounting (or print mounts)", "Amazon", 5),
-    ("A", "Buy", "Build", "PETG filament (known-safe), 1 spool", 1, "Skip if your printer came with filament / use PLA for the first test print", "Amazon", 25),
+    ("A", "Have", "Build", "PETG / PLA filament", 1, "becqu already has all the filament needed - $0 (board mounts get printed)", "(have)", 0),
     ("A", "Buy", "Safety", "Captive lure (feather/pom on short rigid/braided arm)", 1, "#1 cat-safety item: NO free end, over-molded. Attended play only", "craft / Amazon", 5),
     # -- Print (you have a printer) --
     ("A", "Print", "Drivetrain", "N20 -> 3216 motor-mount adapter", 2, "3216 mounts fit its DC motors, not N20s - print an adapter", "3D print", 0),
     ("A", "Print", "Structure", "Top cover + wheel shroud", 1, "Cat-safety: shroud wheel gaps (<4-6 mm or >25 mm), cover electronics", "3D print", 0),
     ("A", "Print", "Structure", "Captive-lure boom arm", 1, "Rigid arm holding the lure, no free end", "3D print", 0),
-    ("A", "Print", "Structure", "Battery + board mounts (optional)", 1, "Or use the 3M squares", "3D print", 0),
+    ("A", "Print", "Structure", "Board + battery mounts", 1, "Print these instead of buying mounting hardware (you have filament)", "3D print", 0),
     # -- Have (don't buy) --
     ("A", "Have", "Compute", "Raspberry Pi Zero 2 W", 1, "In your Pi kit", "(have)", 0),
     ("A", "Have", "Compute", "2x20 GPIO header", 1, "In your Pi kit - solder it on (you do this at work)", "(have)", 0),
@@ -71,13 +66,13 @@ ROWS = [
     ("A", "Have", "Chassis", "Adafruit 3216 chassis - frame + caster ball + hardware", 1, "Your base kit = the robot body", "(have)", 0),
     ("A", "Spare", "Drivetrain", "3216 DC motors + 2 wheels", 1, "Superseded by the N20 drivetrain - keep as spares / backup", "(have)", 0),
 
-    # ================= STAGE B — standalone onboard (track Roy's white chest; software-only, $0) =================
-    ("B", "Have", "Perception", "Roy's natural white chest patch (no collar, no purchase)", 1,
-     "Stage B is SOFTWARE-ONLY on Stage-A hardware: the onboard HSV blob tracker locks onto Roy's white chest (she's black with a clear white chest - a big high-contrast blob). Measure its size to calibrate blob-area -> range. $0, no new parts", "(Roy)", 0),
+    # ================= STAGE A perception — ONBOARD white-chest tracking (software-only, $0) =================
+    ("A", "Have", "Perception", "Roy's natural white chest patch (onboard tracking target, $0)", 1,
+     "Vision runs ONBOARD on the Pi Zero (like GrowBot's onboard face-tracking) - the HSV blob tracker locks onto Roy's white chest (black cat, clear white chest = a big high-contrast blob). Measure its size to calibrate blob-area -> range. No PC, no new parts", "(Roy)", 0),
 
-    # ================= STAGE C — full standalone, no collar (brain upgrade) =================
+    # ================= STAGE C — OPTIONAL: AI detector upgrade (only if white-chest tracking is too fragile) =================
     ("C", "Buy", "Compute", "Raspberry Pi 5 (4-8 GB)", 1,
-     "Brain upgrade for onboard cat detection (Zero 2 W can't). Reuses sensors / drivetrain / power / dock. Iteration 2+", "Amazon", 70),
+     "OPTIONAL: only if onboard white-chest tracking proves too fragile. Brain upgrade for a no-marker AI detector. Reuses everything else. Iteration 2+", "Amazon", 70),
     ("C", "Buy", "Compute", "AI accelerator - Coral USB TPU or Pi AI HAT (Hailo-8L)", 1,
      "Runs a real on-device cat detector at useful fps, no collar. Pairs with the Pi 5", "Coral / Pimoroni", 65),
     ("C", "Buy", "Power", "Larger battery / >=3A supply", 1,
@@ -117,9 +112,9 @@ def build():
     ws["A1"] = "Roybot - Staged Bill of Materials"
     ws["A1"].font = TITLE_FONT
     ws.merge_cells("A2:J2")
-    ws["A2"] = ("STAGE A = first prototype, buy NOW (drive + chase brain + senses + power; perception offloaded to your PC/RTX 3070). "
-                "STAGE B = standalone onboard, tracks Roy's natural white chest (software-only on A's hardware, no new parts, $0). "
-                "STAGE C = OPTIONAL robustness (Pi 5 + AI detector) only if the chest blob is too fragile. B and C build on A. "
+    ws["A2"] = ("GrowBot-with-wheels foundation: onboard fast loop (drive + reflexes + chase) + cloud LLM brain (memory/dreams/voice); cat-play is one behaviour. "
+                "Buy NOW ~$100 - you already have the Pi + 3216 kit + filament. Vision runs ONBOARD (like GrowBot's face-tracking, no PC offload); the cloud is only for the LLM brain + nightly dreams. "
+                "STAGE C = OPTIONAL Pi 5 + AI detector, only if onboard white-chest tracking is too fragile. "
                 "RED = buy, BLUE = 3D-print, GREEN = have, GREY = spare. Tools on hand. Prices = rough ballparks.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
@@ -137,7 +132,7 @@ def build():
         v = ws.cell(row=row, column=9, value=formula); v.number_format = MONEY; v.font = Font(bold=True, color=color)
 
     summ(4, "STAGE A - buy now:", f'=SUMIFS({line_rng},{stage_rng},"A",{status_rng},"Buy")', "B3261E")
-    summ(5, "Stage B add-on (later):", f'=SUMIFS({line_rng},{stage_rng},"B",{status_rng},"Buy")', "666666")
+    summ(5, "Onboard cat-tracking (free):", f'=SUMIFS({line_rng},{stage_rng},"B",{status_rng},"Buy")', "2E7D32")
     summ(6, "Stage C add-on (later):", f'=SUMIFS({line_rng},{stage_rng},"C",{status_rng},"Buy")', "666666")
     summ(7, "Full project (all buy):", f'=SUMIF({status_rng},"Buy",{line_rng})', "1F3A8A")
 
