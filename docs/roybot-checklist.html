@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roybot Checklist</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --card:#fff; --ink:#1c1c1e; --muted:#5f6368; --line:#e3e3e0;
+    --accent:#c8552b; --accent-soft:#fdeee7; --done:#2e7d32; --done-bg:#e8f3e9;
+    --buy:#b3261e; --buy-bg:#fbe3e0; --print:#1f3a8a; --print-bg:#e1ecf7;
+    --build:#8a5a00; --build-bg:#fbf3da; --code:#5b2a86; --code-bg:#efe6f7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16171a; --card:#1f2125; --ink:#ecedf0; --muted:#9aa0a6; --line:#33363c;
+      --accent:#ff7a4d; --accent-soft:#3a261d; --done:#7bd389; --done-bg:#1e3322;
+      --buy:#ff8a80; --buy-bg:#3a201d; --print:#8ab4ff; --print-bg:#1e2740;
+      --build:#e3c069; --build-bg:#332a14; --code:#c9a6e9; --code-bg:#2a1f36;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; padding:0 0 120px}
+  header.top{position:sticky; top:0; z-index:10; background:var(--card);
+    border-bottom:1px solid var(--line); padding:14px 22px}
+  .wrap{max-width:900px; margin:0 auto; padding:0 22px}
+  header.top .wrap{padding:0}
+  h1{font-size:23px; margin:0 0 3px}
+  .sub{color:var(--muted); font-size:13.5px; margin:0}
+  .barbox{display:flex; align-items:center; gap:12px; margin-top:11px}
+  .bar{flex:1; height:11px; background:var(--line); border-radius:99px; overflow:hidden}
+  .bar > i{display:block; height:100%; width:0; background:var(--accent); transition:width .25s}
+  .pct{font-variant-numeric:tabular-nums; font-weight:700; min-width:120px; text-align:right; font-size:13.5px}
+  .intro{background:var(--accent-soft); border:1px solid var(--line); border-radius:12px;
+    padding:14px 18px; margin:22px 0; font-size:14px}
+  .kinds{display:flex; gap:7px; flex-wrap:wrap; margin-top:10px}
+  .k{font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:6px; white-space:nowrap}
+  .k-buy{background:var(--buy-bg); color:var(--buy)} .k-print{background:var(--print-bg); color:var(--print)}
+  .k-build{background:var(--build-bg); color:var(--build)} .k-code{background:var(--code-bg); color:var(--code)}
+  .k-done{background:var(--done-bg); color:var(--done)}
+  section.phase{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px 20px; margin:16px 0; border-left:5px solid var(--line)}
+  section.phase.done{border-left-color:var(--done)} section.phase.now{border-left-color:var(--accent)}
+  h2{font-size:19px; margin:0 0 2px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  h2 .num{color:var(--muted); font-weight:700; font-size:15px}
+  h2 .count{font-size:12.5px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums}
+  .pgoal{color:var(--muted); font-size:13.5px; margin:2px 0 8px}
+  .grp{margin:14px 0 2px; display:flex; align-items:center; gap:8px}
+  .grp h3{font-size:13px; margin:0; letter-spacing:.02em}
+  ul{list-style:none; margin:0; padding:0}
+  li{padding:7px 0; border-top:1px solid var(--line)}
+  li:first-child{border-top:none}
+  label.row{display:flex; gap:10px; align-items:flex-start; cursor:pointer}
+  input[type=checkbox]{width:20px; height:20px; margin:1px 0 0; flex:0 0 auto; cursor:pointer; accent-color:var(--accent)}
+  .t{font-weight:600; font-size:14.5px}
+  .t code{font-size:13px; background:var(--accent-soft); padding:1px 4px; border-radius:4px}
+  .hint{margin:2px 0 0 30px; color:var(--muted); font-size:13px}
+  li.checked .t{text-decoration:line-through; color:var(--muted)}
+  .donelist li{display:flex; gap:9px; align-items:flex-start; color:var(--muted); font-size:14px}
+  .donelist li::before{content:"\2713"; color:var(--done); font-weight:800; flex:0 0 auto}
+  textarea{width:100%; margin-top:12px; min-height:48px; resize:vertical; background:var(--bg);
+    color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:8px 11px; font:13.5px/1.5 inherit}
+  textarea::placeholder{color:var(--muted)}
+  footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
+    border-top:1px solid var(--line); padding:9px 22px}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .saved{color:var(--muted); font-size:13px}
+  button{background:transparent; color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:6px 12px; font:13px inherit; cursor:pointer}
+  button:hover{color:var(--buy); border-color:var(--buy)}
+  a{color:var(--accent)}
+  @media print{ header.top,footer{position:static} body{padding-bottom:0} section.phase{break-inside:avoid} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Roybot Checklist</h1>
+  <p class="sub">Follows the roadmap in order — buy, print, build, code. Checks &amp; notes save in this browser.</p>
+  <div class="barbox"><div class="bar"><i id="barfill"></i></div><div class="pct" id="pcttext">0 / 0</div></div>
+</div></header>
+
+<div class="wrap">
+  <div class="intro">
+    <b>Roybot = GrowBot, with wheels.</b> Work top to bottom. Each step is tagged by mode so you know when you're
+    switching hats:
+    <div class="kinds">
+      <span class="k k-buy">BUY</span><span class="k k-print">PRINT</span>
+      <span class="k k-build">BUILD</span><span class="k k-code">CODE</span><span class="k k-done">DONE</span>
+    </div>
+  </div>
+
+  <!-- PHASE 0 (done, recap only) -->
+  <section class="phase done">
+    <h2><span class="num">Phase 0</span> Foundations <span class="k k-done">DONE</span></h2>
+    <p class="pgoal">The hard skill — moving to play with Roy — de-risked in software. No tracking needed; here for context.</p>
+    <ul class="donelist">
+      <li>MuJoCo wheeled twin + moody simulated cat</li>
+      <li>Consent-based chase policy trained → <code>final_policy.npz</code> (the fast learned skill: 50 Hz, frame-stacked, torch-free, Pi-deployable)</li>
+      <li>Specs (drive-chase, vision/roadmap, perception) + 8-agent reality check</li>
+      <li>~$100 BOM (<code>docs/phase2/roybot-prototype-BOM.xlsx</code>) + this roadmap</li>
+    </ul>
+  </section>
+
+  <!-- PHASE 1 -->
+  <section class="phase now">
+    <h2><span class="num">Phase 1</span> Roll the GrowBot foundation <span class="k k-buy" style="background:var(--accent-soft);color:var(--accent)">NOW</span> <span class="count" data-count></span></h2>
+    <p class="pgoal">A physical bot that drives, senses, and tracks Roy onboard. ~$99 to buy.</p>
+
+    <div class="grp"><span class="k k-buy">BUY</span><h3>Order the parts (~$99)</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-motors"><span class="t">2× N20 6 V gearmotor + hall encoder + wheel (generic kit)</span></label><p class="hint">GA12-N20, 3.3 V-logic encoder, integrated wheel. Keeps closed-loop for ~$20 less than Pololu.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-tb"><span class="t">TB6612FNG dual H-bridge</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-sd"><span class="t">microSD 32 GB (Class 10 / A1)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-cam"><span class="t">OV5647 camera — Pi-Zero narrow-ribbon version</span></label><p class="hint">Must be the Zero version, not the standard ribbon.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-imu"><span class="t">MPU-6050 IMU (GY-521)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-mic"><span class="t">INMP441 I²S mic</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-amp"><span class="t">MAX98357A I²S amp + 8 Ω speaker</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-led"><span class="t">WS2812B LED ring (7 px) + 330–470 Ω resistor</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-power"><span class="t">Power: 18650 cell + holder, TP4056, 2× MT3608, 2× cap, SPST switch</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-wire"><span class="t">Hookup wire + Dupont jumpers</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-buy-lure"><span class="t">Captive lure (feather/pom on a rigid arm)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-have"><span class="t">Confirm in hand: Pi Zero 2 W + header + cables, 3216 kit, filament, tools</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-print">PRINT</span><h3>3D-print</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-pr-adapter"><span class="t">N20 → 3216 motor-mount adapter ×2</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-pr-cover"><span class="t">Top cover + wheel shroud</span></label><p class="hint">Shroud wheel gaps &lt;4–6 mm or &gt;25 mm; cover electronics.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-pr-boom"><span class="t">Captive-lure boom arm</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-pr-mounts"><span class="t">Board + battery mounts</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-code">CODE</span><h3>Pi software bring-up</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-sw-flash"><span class="t">Flash Raspberry Pi OS Lite 64-bit; headless WiFi + SSH</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sw-repo"><span class="t">Pull the roybot repo + set up the <code>.venv</code> on the Pi</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sw-infer"><span class="t">Verify <code>NumpyPolicy</code> loads <code>final_policy.npz</code> and runs at 50 Hz (frame-stack N_STACK=6)</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-build">BUILD</span><h3>Power assembly</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-pw-wire"><span class="t">Wire 18650 → TP4056 → 2× MT3608; add caps, inline fuse, switch</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-pw-set"><span class="t">Multimeter: set MT3608 #1 → ~5.1 V (Pi), #2 → ~6.0 V (motors) BEFORE connecting the Pi</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-pw-boot"><span class="t">Pi boots off the 5.1 V rail (5 V GPIO pins)</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-build">BUILD</span><span class="k k-code">CODE</span><h3>Drivetrain</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-dt-mount"><span class="t">Mount N20s via the printed adapter; wire to TB6612 (VM=6 V, VCC=3.3 V, STBY high)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-dt-enc"><span class="t">Wire encoders (A/B → interrupt pins, 3.3 V)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-dt-drv"><span class="t">Port <code>drive.py</code> to PWM (≥20 kHz); self-check: straight=equal, spin=opposite, forward-polarity</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-dt-pid"><span class="t">Encoder PID closed-loop wheel speed + stall cutoff (encoder-vs-command) + drive watchdog</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-dt-test"><span class="t">Tethered drive test (drives + turns in place)</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-build">BUILD</span><span class="k k-code">CODE</span><h3>Sensors, audio, lights</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-sn-imu"><span class="t">MPU-6050 (I²C) reads; IMU tip + no-motion stall reflexes fire</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sn-cam"><span class="t">OV5647 (CSI) captures frames</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sn-audio"><span class="t">INMP441 mic + MAX98357A amp + speaker (I²S) in/out works</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sn-led"><span class="t">WS2812 ring lights (via the series resistor)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-sn-measure"><span class="t">Measure real wheel OD + track + assembled weight → send me to refit <code>roybot.xml</code></span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-code">CODE</span><h3>Onboard vision tracking</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-vis-measure"><span class="t">Measure Roy's white-chest size (for blob-area → range calibration)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-vis-blob"><span class="t">HSV white-chest blob tracker (5–15 Hz) + hold/constant-velocity estimator → CatState</span></label><p class="hint">Outputs bearing / range / approach / engagement / visible, up-sampled to 50 Hz. Onboard, no PC.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-vis-verify"><span class="t">Verify it tracks Roy onboard</span></label></li>
+    </ul>
+
+    <div class="grp"><span class="k k-build">BUILD</span><h3>Cat-safety sign-off (before Roy)</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p1-safe-lure"><span class="t">Lure captive, over-molded, no free end; attended-play only</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-safe-gaps"><span class="t">Wheel gaps shrouded; no swallowable parts; tool-locked battery hatch</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p1-safe-cg"><span class="t">Low-CG / self-right verified with real weight in</span></label></li>
+    </ul>
+    <textarea data-note="p1" placeholder="Phase 1 notes — order tracking, part #s, measured wheel OD/track/weight, calibration values…"></textarea>
+  </section>
+
+  <!-- PHASE 2 -->
+  <section class="phase">
+    <h2><span class="num">Phase 2</span> The brain (LLM) <span class="count" data-count></span></h2>
+    <p class="pgoal">The cloud LLM mind — the heart of GrowBot. Strictly out of the 50 Hz loop.</p>
+    <div class="grp"><span class="k k-code">CODE</span><h3>Build the brain</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p2-iface"><span class="t">Swappable LLM client interface (<code>complete(messages)→text</code>), model id from config</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-or"><span class="t">OpenRouter backend: <code>deepseek/deepseek-v4-flash</code>; key from env + <code>.gitignore</code> (no spend cap)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-async"><span class="t">Async / non-blocking calls; degrade to no-op offline (never block the robot)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-mem"><span class="t">Memory it reads/writes — the agent loop</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-compose"><span class="t">LLM composes behaviour: selects/tunes the fast policies + writes code snippets</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-express"><span class="t">Emotional expression: coordinated motion + sound + LED states</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-voice"><span class="t">Two-way voice: wake-word + STT + TTS (prefer local STT/TTS)</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p2-test"><span class="t">Test: responds to touch/voice, expresses believable states, talks with you</span></label></li>
+    </ul>
+    <textarea data-note="p2" placeholder="Phase 2 notes — API setup, prompts, model behaviour…"></textarea>
+  </section>
+
+  <!-- PHASE 3 -->
+  <section class="phase">
+    <h2><span class="num">Phase 3</span> Memory + dreams <span class="count" data-count></span></h2>
+    <p class="pgoal">Learns over time; consolidates each night.</p>
+    <div class="grp"><span class="k k-code">CODE</span><h3>Memory &amp; the nightly dream</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p3-store"><span class="t">Persistent memory store — profiles of Roy, you, and events</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p3-dream"><span class="t">Nightly dream: dump memory → <code>Claude Opus 4.8</code> (via your Claude subscription) → consolidate, resolve conflicts, extract lessons</span></label><p class="hint">Same swappable client, so OpenRouter is a config swap.</p></li>
+      <li><label class="row"><input type="checkbox" data-key="p3-report"><span class="t">Daily Roy report generated</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p3-finetune"><span class="t">(Optional) fine-tune the chase policy on real interactions</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p3-verify"><span class="t">Verify: dream runs nightly, report lands, behaviour improves over days</span></label></li>
+    </ul>
+    <textarea data-note="p3" placeholder="Phase 3 notes — memory schema, dream prompt, report format…"></textarea>
+  </section>
+
+  <!-- PHASE 4 -->
+  <section class="phase">
+    <h2><span class="num">Phase 4</span> Cat-play behaviour <span class="count" data-count></span></h2>
+    <p class="pgoal">Wire the already-trained chase policy in as a behaviour the brain invokes. (Ready to pull early.)</p>
+    <div class="grp"><span class="k k-code">CODE</span><h3>Wire in the chase policy</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p4-deploy"><span class="t">Deploy the chase policy; feed it the onboard white-chest CatState</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p4-reframe"><span class="t">Obs/reward reframe (blob signals + heuristic engagement + trained cat-lost path); widen latency DR; retrain</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p4-arbiter"><span class="t">Brain arbiter: play vs leave-alone vs explore; consent — back off when Roy's done</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p4-session"><span class="t">First attended Roy session — watch consent + safety</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p4-verify"><span class="t">Verify: plays on her terms, fully onboard, brain-invoked</span></label></li>
+    </ul>
+    <textarea data-note="p4" placeholder="Phase 4 notes — Roy's reactions, what to tune…"></textarea>
+  </section>
+
+  <!-- PHASE 5 -->
+  <section class="phase">
+    <h2><span class="num">Phase 5</span> Optional upgrades <span class="count" data-count></span></h2>
+    <p class="pgoal">Nice-to-haves, only if/when wanted.</p>
+    <div class="grp"><span class="k k-build">BUILD</span><span class="k k-code">CODE</span><h3>Options</h3></div>
+    <ul>
+      <li><label class="row"><input type="checkbox" data-key="p5-dock"><span class="t">Self-charging dock — IR homing → funnel → pogo-pin charge; docking triggers the dream</span></label></li>
+      <li><label class="row"><input type="checkbox" data-key="p5-harden"><span class="t">Hardening — PETG durability, enclosure airflow, cat-safety sign-off</span></label></li>
+    </ul>
+    <textarea data-note="p5" placeholder="Phase 5 notes…"></textarea>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  <span class="saved" id="saved">Saved locally in this browser.</span>
+  <button id="reset">Reset all</button>
+</div></footer>
+
+<script>
+(function(){
+  var KEY = "roybot-checklist-v1";
+  var boxes = [].slice.call(document.querySelectorAll('input[type=checkbox][data-key]'));
+  var notes = [].slice.call(document.querySelectorAll('textarea[data-note]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ saved = {}; }
+  saved.checks = saved.checks || {}; saved.notes = saved.notes || {};
+  function save(){ localStorage.setItem(KEY, JSON.stringify(saved)); }
+
+  function refresh(){
+    var done = boxes.filter(function(b){ return b.checked; }).length, total = boxes.length;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('barfill').style.width = pct + "%";
+    document.getElementById('pcttext').textContent = done + " / " + total + "  (" + pct + "%)";
+    document.querySelectorAll('section.phase').forEach(function(sec){
+      var cs = sec.querySelectorAll('input[type=checkbox][data-key]');
+      var span = sec.querySelector('[data-count]'); if(!span || !cs.length) return;
+      var d = 0; cs.forEach(function(c){ if(c.checked) d++; });
+      span.textContent = d + "/" + cs.length;
+    });
+  }
+  boxes.forEach(function(b){
+    b.checked = !!saved.checks[b.dataset.key];
+    b.closest('li').classList.toggle('checked', b.checked);
+    b.addEventListener('change', function(){
+      saved.checks[b.dataset.key] = b.checked;
+      b.closest('li').classList.toggle('checked', b.checked);
+      save(); refresh();
+    });
+  });
+  notes.forEach(function(t){
+    t.value = saved.notes[t.dataset.note] || "";
+    t.addEventListener('input', function(){ saved.notes[t.dataset.note] = t.value; save(); });
+  });
+  document.getElementById('reset').addEventListener('click', function(){
+    if(!confirm("Clear every check and note?")) return;
+    saved = {checks:{}, notes:{}}; save();
+    boxes.forEach(function(b){ b.checked=false; b.closest('li').classList.remove('checked'); });
+    notes.forEach(function(t){ t.value=""; });
+    refresh();
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>
