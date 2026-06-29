@@ -46,10 +46,11 @@
   .goal{color:var(--ink); font-size:15px; margin:6px 0 12px}
   .goal b{color:var(--accent)}
   h3{font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted);
-    margin:14px 0 6px}
+    margin:14px 0 6px; line-height:1.35}
+  .meta>div>h3:first-child{margin-top:0}
   ul{margin:0; padding-left:20px} li{padding:2px 0}
-  .meta{display:grid; grid-template-columns:1fr 1fr; gap:14px}
-  @media (max-width:640px){ .meta{grid-template-columns:1fr} }
+  .meta{display:block}
+  .meta>div+div{margin-top:16px}
   .risk{color:var(--warn)}
   .tag{display:inline-block; font-size:12px; font-weight:600; background:var(--accent-soft);
     color:var(--accent); border:1px solid var(--line); border-radius:7px; padding:1px 8px}
@@ -115,7 +116,8 @@
   <section class="phase now">
     <div class="phead"><span class="num">Phase 1</span><h2>First prototype build</h2><span class="pill b-now">NOW</span>
       <span class="tag">BOM Stage A (~$158)</span></div>
-    <p class="goal">Goal: a physical bot that <b>drives, runs the policy, and visibly reacts to Roy</b> (perception offloaded to the PC).</p>
+    <p class="goal">Goal: a physical bot that <b>drives, runs the policy, and visibly reacts to Roy</b> — with vision <b>offloaded to your PC (RTX 3070)</b>, so the bot needs no heavy onboard compute yet.</p>
+    <p class="goal" style="font-size:13.5px;color:var(--muted)">Cost: <b>$158</b> as specced (Pololu N20 + encoders, chosen for reliability after the reality check). ~$110 if you swap to generic N20+encoder motors and use filament you already have — your call.</p>
     <div class="meta">
       <div>
         <h3>Key work</h3>
@@ -124,7 +126,7 @@
           <li>Assemble: solder header; print + mount the N20→3216 adapter, cover/shroud, lure boom; wire the dual rail (meter-set 5.1 V / 6.0 V), TB6612, encoders, IMU, camera, audio, LED</li>
           <li>Driver bring-up: self-check (straight = equal, spin = opposite, <em>forward-polarity</em>); encoder PID closes the wheel-speed loop (matches the sim)</li>
           <li>Deploy the policy: NumPy MLP @50 Hz on the Pi, frame-stack N_STACK=6; verify obs order/scale vs <code>env.py</code></li>
-          <li>Perception <b>Stage A</b>: stream camera → PC detector → CatState back over WiFi</li>
+          <li>Perception <b>Stage A</b>: the bot streams camera frames to <b>your PC (RTX 3070)</b>, which detects Roy and sends her position back over WiFi — the 3070 does the vision, not the bot</li>
           <li>Prove "reacts to Roy" with a <em>hand-written</em> turn-toward-blob controller before swapping in the MLP</li>
         </ul>
       </div>
@@ -149,22 +151,22 @@
   <!-- PHASE 2 -->
   <section class="phase next">
     <div class="phead"><span class="num">Phase 2</span><h2>Standalone perception</h2><span class="pill b-next">NEXT</span>
-      <span class="tag">Perception Stage B · +collar ~$5</span></div>
-    <p class="goal">Goal: <b>cut the PC cord</b> — perception runs entirely onboard the Pi Zero.</p>
+      <span class="tag">Perception Stage B · no collar (Roy's white chest) · $0</span></div>
+    <p class="goal">Goal: <b>cut the PC cord</b> — perception runs entirely onboard the Pi Zero, tracking <b>Roy's natural white chest patch</b> (she's all black with a clear white chest — a big, high-contrast blob, no collar needed).</p>
     <div class="meta">
       <div>
         <h3>Key work</h3>
         <ul>
-          <li>Onboard colored-collar HSV blob tracker (5–15 Hz) + hold/constant-velocity estimator → CatState; collar on Roy</li>
+          <li>Onboard HSV blob tracker (5–15 Hz) locked onto <b>Roy's white chest patch</b> + hold/constant-velocity estimator → CatState (bigger & blobbier than a collar, and always on her)</li>
           <li><b>Obs/reward reframe</b> (the reality-check fix): retrain on bearing / range / approach-sign / engagement / visible; add a trained cat-lost path; widen latency DR to 250–500 ms; down-sample cat obs to 5–10 Hz</li>
-          <li>Calibrate blob-area → range against the collar's known size</li>
+          <li>Calibrate blob-area → range against the measured size of Roy's white chest (you can measure it)</li>
         </ul>
       </div>
       <div>
         <h3>Why it works onboard</h3>
         <ul>
-          <li>Blob tracking is light enough for the Zero 2 W (a cat <em>neural net</em> is not — that's Stage C)</li>
-          <li>Same bot as Phase 1; only addition is the collar</li>
+          <li>Blob tracking (find the white patch by colour) is light enough to run on the Pi Zero. The heavier alternative — an AI image-detector that recognises a cat with no marker at all — needs more compute (the optional Stage C below)</li>
+          <li>Same bot as Phase 1 — <b>no new hardware</b> (uses her natural markings)</li>
         </ul>
         <h3>Success criteria</h3>
         <ul><li>Plays with Roy with the PC off and WiFi irrelevant</li></ul>
@@ -255,15 +257,15 @@
 
   <!-- PHASE 6 -->
   <section class="phase later">
-    <div class="phead"><span class="num">Phase 6</span><h2>Full standalone vision + hardening</h2><span class="pill b-later">LATER</span>
+    <div class="phead"><span class="num">Phase 6</span><h2>Optional: AI-detector vision + hardening</h2><span class="pill b-later">OPTIONAL</span>
       <span class="tag">Perception Stage C (~$150)</span></div>
-    <p class="goal">Goal: recognize Roy with <b>no collar, fully onboard</b>, plus durability/safety polish.</p>
+    <p class="goal">Goal: <b>only if the white-chest blob proves too fragile</b> (bad lighting, chest hidden, another cat around). Stage B already gives no-collar standalone, so this is a <b>robustness upgrade, not a requirement</b> — plus durability/safety polish.</p>
     <div class="meta">
       <div>
         <h3>Key work</h3>
         <ul>
-          <li>Brain upgrade: Pi 5 + AI accelerator (Coral USB TPU or Pi AI HAT / Hailo-8L) + larger battery</li>
-          <li>On-device cat detector (no collar); optionally a learned engagement estimate</li>
+          <li>Brain upgrade: Pi 5 + an AI accelerator (Coral USB TPU or Pi AI HAT / Hailo-8L) + larger battery — only needed to run the detector below</li>
+          <li>On-device AI cat-detector: an image model that finds Roy with no marker at all (vs Stage B's white-chest blob), robust to lighting/occlusion; optionally a learned engagement estimate</li>
           <li>Enclosure airflow; PETG durability; cat-safety final sign-off</li>
         </ul>
       </div>

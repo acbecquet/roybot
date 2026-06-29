@@ -63,38 +63,43 @@ when crowded or when the cat leaves / ignores. Tunable. Honest scope cut, docume
   bot is tethered to the PC. On dropout → `visible=False` (the cat-lost path).
 - **Success:** bot visibly tracks + plays with Roy with perception served from the PC.
 
-### Stage B — Standalone onboard, colored collar (cuts the PC cord)
-- **Backend:** **HSV colored-collar blob tracker on the Pi Zero** at 5–15 Hz: segment the collar
-  color → centroid = bearing, **blob area = range proxy** (calibrate against the known collar
-  size), frame-to-frame Δ = approach_rate; hold + constant-velocity estimate up to the 50 Hz the
-  policy wants. Heuristic engagement.
-- **Hardware:** **same bot** — the ONLY addition is a **high-contrast collar/tag for Roy** (~$5).
-  No new electronics; Stage B is essentially software on Stage-A hardware.
-- **Pros:** fully standalone, no PC, no WiFi; light enough to run onboard.
-- **Cons:** Roy must wear the collar; can't identify an arbitrary cat; blob tracking drops on
-  occlusion/dark (→ `visible=False`, must be handled).
+### Stage B — Standalone onboard, Roy's white chest (cuts the PC cord)
+- **Backend:** **HSV blob tracker on the Pi Zero** at 5–15 Hz locked onto **Roy's natural white
+  chest patch** (she is all black with a clear white chest — a large, high-contrast blob, bigger
+  and blobbier than a collar and always on her): segment the white region → centroid = bearing,
+  **blob area = range proxy** (calibrate against the measured chest size), frame-to-frame Δ =
+  approach_rate; hold + constant-velocity estimate up to the 50 Hz the policy wants. Heuristic
+  engagement.
+- **Hardware:** **same bot — NO new hardware at all** (uses her markings; no collar needed).
+- **Pros:** fully standalone, no PC, no WiFi, no collar; light enough to run onboard.
+- **Cons:** relies on her white chest being visible — drops on occlusion / bad light / when she
+  faces fully away (→ `visible=False`, must be handled); tuned to Roy specifically.
 - **Success:** plays with Roy with the PC off and WiFi irrelevant.
 
-### Stage C — Full standalone, no collar (brain upgrade)
+### Stage C — OPTIONAL: on-device AI detector (robustness upgrade)
+- **When:** only if Stage B's white-chest blob proves too fragile (bad lighting, chest occluded,
+  she faces away, or a second cat appears). Stage B already delivers no-collar standalone, so this
+  is a robustness upgrade, **not a requirement**.
 - **Backend:** a real on-device cat detector (e.g. quantized MobileNet-SSD / YOLO-nano) at useful
-  fps, no collar; optionally a learned engagement estimate.
+  fps — an AI image model that finds Roy with no marker, robust to lighting/occlusion; optionally
+  a learned engagement estimate.
 - **Hardware:** brain upgrade — **Pi 5 + an AI accelerator** (Coral USB Edge TPU ~$60, or the Pi
-  AI HAT / Hailo-8L ~$70) + a larger battery for the higher draw. (Jetson Orin Nano is overkill
-  for a cat toy — skip.) Everything else (drivetrain, sensors, audio, dock) carries over.
-- **Pros:** recognizes Roy with no marker, fully onboard.
-- **Cons:** +cost, power, weight; iteration 2+.
-- **Success:** detects + plays with Roy onboard, no collar, no PC.
+  AI HAT / Hailo-8L ~$70) + a larger battery. (Jetson Orin Nano is overkill — skip.) Everything
+  else (drivetrain, sensors, audio, dock) carries over.
+- **Cons:** +cost, power, weight; only worth it if B's tracking is insufficient.
+- **Success:** detects + plays with Roy onboard regardless of whether her chest is visible.
 
 ## 4. Why this ordering
 
 Each stage is a backend swap behind §2's interface, so the policy and the rest of the robot never
-change. A gets a working, *capable* bot fastest using hardware on hand; B reaches true standalone
-on the *same* hardware (the end goal becqu wants) at the cost of a collar; C removes the collar at
-the cost of a compute upgrade. The obs/reward reframe in §2 is done once, up front, and holds for
-all three because the contract fields are the lowest common denominator every backend can produce.
+change. A gets a working, *capable* bot fastest using the PC (RTX 3070) for vision; B reaches true
+standalone on the *same* hardware with **no new parts** by tracking Roy's white chest (the end goal
+becqu wants); C is an **optional** robustness upgrade (an AI detector) only if the chest blob proves
+too fragile. The obs/reward reframe in §2 is done once, up front, and holds for all three because
+the contract fields are the lowest common denominator every backend can produce.
 
 ## 5. Open items
-- Calibrate blob-area → range against the actual collar marker size (Stage B).
+- Calibrate blob-area → range against the measured size of Roy's white chest patch (Stage B).
 - Choose the Stage-A wire protocol (frames up / CatState down) + a watchdog → `visible=False` on
   stall. Keep raw frames off any cloud; PC offload is LAN-only.
 - Engagement heuristic weights — tune in sim, then on Roy.

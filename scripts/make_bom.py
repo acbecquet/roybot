@@ -71,9 +71,9 @@ ROWS = [
     ("A", "Have", "Chassis", "Adafruit 3216 chassis - frame + caster ball + hardware", 1, "Your base kit = the robot body", "(have)", 0),
     ("A", "Spare", "Drivetrain", "3216 DC motors + 2 wheels", 1, "Superseded by the N20 drivetrain - keep as spares / backup", "(have)", 0),
 
-    # ================= STAGE B — standalone onboard (collar tracker) =================
-    ("B", "Buy", "Perception", "High-contrast collar / tag for Roy", 1,
-     "Stage B is otherwise SOFTWARE-ONLY on Stage-A hardware: the onboard HSV blob tracker locks onto this collar. Calibrate blob-area -> range to its known size. No new electronics", "pet store / craft", 5),
+    # ================= STAGE B — standalone onboard (track Roy's white chest; software-only, $0) =================
+    ("B", "Have", "Perception", "Roy's natural white chest patch (no collar, no purchase)", 1,
+     "Stage B is SOFTWARE-ONLY on Stage-A hardware: the onboard HSV blob tracker locks onto Roy's white chest (she's black with a clear white chest - a big high-contrast blob). Measure its size to calibrate blob-area -> range. $0, no new parts", "(Roy)", 0),
 
     # ================= STAGE C — full standalone, no collar (brain upgrade) =================
     ("C", "Buy", "Compute", "Raspberry Pi 5 (4-8 GB)", 1,
@@ -117,9 +117,9 @@ def build():
     ws["A1"] = "Roybot - Staged Bill of Materials"
     ws["A1"].font = TITLE_FONT
     ws.merge_cells("A2:J2")
-    ws["A2"] = ("STAGE A = first prototype, buy NOW (drive + chase brain + senses + power; perception offloaded to PC). "
-                "STAGE B = standalone onboard colored-collar tracker (software-only on A's hardware + a collar). "
-                "STAGE C = full standalone, no collar (Pi 5 + AI accelerator). B and C build on A. "
+    ws["A2"] = ("STAGE A = first prototype, buy NOW (drive + chase brain + senses + power; perception offloaded to your PC/RTX 3070). "
+                "STAGE B = standalone onboard, tracks Roy's natural white chest (software-only on A's hardware, no new parts, $0). "
+                "STAGE C = OPTIONAL robustness (Pi 5 + AI detector) only if the chest blob is too fragile. B and C build on A. "
                 "RED = buy, BLUE = 3D-print, GREEN = have, GREY = spare. Tools on hand. Prices = rough ballparks.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
