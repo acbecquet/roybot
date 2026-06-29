@@ -2,6 +2,12 @@
 
 **Status:** Approved (design) · **Date:** 2026-06-28 · **Owner:** becqu
 
+> **UPDATE (post roadmap review):** Vision runs **ONBOARD from day one — no PC offload** (becqu's
+> call: GrowBot does its vision onboard; the cloud/PC is only for the LLM brain + nightly dreams).
+> The one perception approach is the **onboard white-chest blob tracker** (Stage B below).
+> **Stage A (PC offload) and Stage C (Pi 5 + AI detector) are DROPPED** — read "Stage B" as "the
+> approach"; the A/C text is kept only for history.
+
 How Roybot turns a camera into the abstract cat signal the chase policy consumes — and the
 staged path from "offload to the PC" to "fully standalone." Companion to the
 [drive-chase-core design](2026-06-22-roybot-drive-chase-core-design.md) and the
@@ -76,18 +82,9 @@ when crowded or when the cat leaves / ignores. Tunable. Honest scope cut, docume
   faces fully away (→ `visible=False`, must be handled); tuned to Roy specifically.
 - **Success:** plays with Roy with the PC off and WiFi irrelevant.
 
-### Stage C — OPTIONAL: on-device AI detector (robustness upgrade)
-- **When:** only if Stage B's white-chest blob proves too fragile (bad lighting, chest occluded,
-  she faces away, or a second cat appears). Stage B already delivers no-collar standalone, so this
-  is a robustness upgrade, **not a requirement**.
-- **Backend:** a real on-device cat detector (e.g. quantized MobileNet-SSD / YOLO-nano) at useful
-  fps — an AI image model that finds Roy with no marker, robust to lighting/occlusion; optionally
-  a learned engagement estimate.
-- **Hardware:** brain upgrade — **Pi 5 + an AI accelerator** (Coral USB Edge TPU ~$60, or the Pi
-  AI HAT / Hailo-8L ~$70) + a larger battery. (Jetson Orin Nano is overkill — skip.) Everything
-  else (drivetrain, sensors, audio, dock) carries over.
-- **Cons:** +cost, power, weight; only worth it if B's tracking is insufficient.
-- **Success:** detects + plays with Roy onboard regardless of whether her chest is visible.
+### Stage C — DROPPED (no Pi 5)
+becqu's call: there is no AI-detector / Pi 5 upgrade path. Onboard white-chest tracking (Stage B) is
+the perception, full stop. If it ever proves too fragile, revisit then — but it is not on the roadmap.
 
 ## 4. Why this ordering
 
@@ -103,4 +100,3 @@ the contract fields are the lowest common denominator every backend can produce.
 - Choose the Stage-A wire protocol (frames up / CatState down) + a watchdog → `visible=False` on
   stall. Keep raw frames off any cloud; PC offload is LAN-only.
 - Engagement heuristic weights — tune in sim, then on Roy.
-- Stage C detector + accelerator choice — defer until B is proven.

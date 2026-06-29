@@ -63,10 +63,10 @@
 
 <div class="wrap">
   <div class="intro">
-    The main product is <b>GrowBot-with-wheels</b>: a curious, <b>LLM-brained companion robot</b> — an onboard
-    fast loop (drive + reflexes) plus a cloud brain that <b>remembers, dreams, expresses itself, and talks</b>.
-    <b>Playing with Roy is one behaviour</b> it can choose, not the whole point. ~$100, and <b>fully onboard
-    except the cloud brain + nightly dreams</b> (vision runs on the Pi, like GrowBot's face-tracking — no PC offload).
+    The main product is GrowBot-with-wheels: a curious, LLM-brained companion robot — an onboard
+    fast loop (drive + reflexes) plus a cloud brain that remembers, dreams, expresses itself, and talks.
+    Playing with Roy is one behaviour it can choose, not the whole point. ~$100, and fully onboard
+    except the cloud brain + nightly dreams (vision runs on the Pi, like GrowBot's face-tracking — no PC offload).
     <div class="legend">
       <span class="pill b-done">DONE</span><span class="pill b-now">NOW</span>
       <span class="pill b-next">NEXT</span><span class="pill b-later">LATER</span>
@@ -115,7 +115,7 @@
     <p class="goal">Goal: the <b>cloud LLM brain</b> — the heart of the GrowBot idea. Strictly out of the 50 Hz loop; cloud is for language/reflection only.</p>
     <h3>Key work</h3>
     <ul>
-      <li>Swappable <b>OpenRouter</b> client (<code>deepseek/deepseek-v4-flash</code> to start; model id from config; key from env + .gitignore + hard spend cap)</li>
+      <li>Swappable <b>OpenRouter</b> client (<code>deepseek/deepseek-v4-flash</code> to start; model id from config; key from env + .gitignore)</li>
       <li>A <b>memory</b> it reads/writes — the agent loop (a model in a loop with memory)</li>
       <li>The LLM drives the body by <b>selecting/tuning the fast policies and writing small code snippets</b> on the fly (like GrowBot)</li>
       <li><b>Emotional expression</b> — coordinated motion + sound + LED states</li>
@@ -123,9 +123,8 @@
     </ul>
     <h3>Risks &amp; mitigations</h3>
     <ul>
-      <li class="risk">Key safety → env var + .gitignore + spend cap before the first commit that touches it</li>
+      <li class="risk">Key safety → API key from env var + .gitignore before the first commit that touches it</li>
       <li class="risk">Cloud/WiFi dependency → degrade to a no-op offline; never block the robot on a slow call</li>
-      <li class="risk">Privacy → send only abstracted text to the cloud, never raw audio/images</li>
     </ul>
     <h3>Success</h3>
     <ul><li>Responds to touch/voice, expresses believable states, composes actions via the LLM, and talks with you</li></ul>
@@ -139,7 +138,7 @@
     <h3>Key work</h3>
     <ul>
       <li>Persistent memory — profiles of Roy, you, and events</li>
-      <li><b>Nightly dream</b>: dump the whole memory to the smartest model to consolidate, resolve conflicts, and extract lessons; write the daily Roy report</li>
+      <li><b>Nightly dream</b>: dump the whole memory to the smartest model — <b>Claude Opus 4.8 via your Claude subscription</b> (same swappable client, so the OpenRouter path is just a config swap) — to consolidate, resolve conflicts, and extract lessons; write the daily Roy report</li>
       <li>Optionally fine-tune the chase policy on real interactions</li>
     </ul>
     <h3>Success</h3>
@@ -169,7 +168,6 @@
     <h3>Options</h3>
     <ul>
       <li><b>Self-charging dock</b> — battery-low → IR homing → funnel → pogo-pin charge; docking triggers the dream (uses the Phase-1 encoders/odometry)</li>
-      <li><b>AI-detector vision (Stage C)</b> — Pi 5 + accelerator for no-marker cat detection, <b>only if</b> onboard white-chest tracking proves too fragile (~$150)</li>
       <li><b>Hardening</b> — PETG durability, enclosure airflow, cat-safety sign-off</li>
     </ul>
   </section>

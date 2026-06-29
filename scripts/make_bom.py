@@ -70,13 +70,6 @@ ROWS = [
     ("A", "Have", "Perception", "Roy's natural white chest patch (onboard tracking target, $0)", 1,
      "Vision runs ONBOARD on the Pi Zero (like GrowBot's onboard face-tracking) - the HSV blob tracker locks onto Roy's white chest (black cat, clear white chest = a big high-contrast blob). Measure its size to calibrate blob-area -> range. No PC, no new parts", "(Roy)", 0),
 
-    # ================= STAGE C — OPTIONAL: AI detector upgrade (only if white-chest tracking is too fragile) =================
-    ("C", "Buy", "Compute", "Raspberry Pi 5 (4-8 GB)", 1,
-     "OPTIONAL: only if onboard white-chest tracking proves too fragile. Brain upgrade for a no-marker AI detector. Reuses everything else. Iteration 2+", "Amazon", 70),
-    ("C", "Buy", "Compute", "AI accelerator - Coral USB TPU or Pi AI HAT (Hailo-8L)", 1,
-     "Runs a real on-device cat detector at useful fps, no collar. Pairs with the Pi 5", "Coral / Pimoroni", 65),
-    ("C", "Buy", "Power", "Larger battery / >=3A supply", 1,
-     "Pi 5 + accelerator draw far more than the Zero 2 W", "Amazon", 15),
 ]
 
 TOOLS = [
@@ -114,7 +107,6 @@ def build():
     ws.merge_cells("A2:J2")
     ws["A2"] = ("GrowBot-with-wheels foundation: onboard fast loop (drive + reflexes + chase) + cloud LLM brain (memory/dreams/voice); cat-play is one behaviour. "
                 "Buy NOW ~$100 - you already have the Pi + 3216 kit + filament. Vision runs ONBOARD (like GrowBot's face-tracking, no PC offload); the cloud is only for the LLM brain + nightly dreams. "
-                "STAGE C = OPTIONAL Pi 5 + AI detector, only if onboard white-chest tracking is too fragile. "
                 "RED = buy, BLUE = 3D-print, GREEN = have, GREY = spare. Tools on hand. Prices = rough ballparks.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
@@ -131,10 +123,7 @@ def build():
         c = ws.cell(row=row, column=7, value=label); c.font = Font(bold=True); c.alignment = Alignment(horizontal="right")
         v = ws.cell(row=row, column=9, value=formula); v.number_format = MONEY; v.font = Font(bold=True, color=color)
 
-    summ(4, "STAGE A - buy now:", f'=SUMIFS({line_rng},{stage_rng},"A",{status_rng},"Buy")', "B3261E")
-    summ(5, "Onboard cat-tracking (free):", f'=SUMIFS({line_rng},{stage_rng},"B",{status_rng},"Buy")', "2E7D32")
-    summ(6, "Stage C add-on (later):", f'=SUMIFS({line_rng},{stage_rng},"C",{status_rng},"Buy")', "666666")
-    summ(7, "Full project (all buy):", f'=SUMIF({status_rng},"Buy",{line_rng})', "1F3A8A")
+    summ(4, "TO BUY (the whole ~$100 bot):", f'=SUMIF({status_rng},"Buy",{line_rng})', "B3261E")
 
     for c, h in enumerate(headers, start=1):
         cell = ws.cell(row=head_row, column=c, value=h)
