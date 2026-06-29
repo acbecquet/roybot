@@ -23,15 +23,9 @@ STATUSES = ["Buy", "Print", "Have", "Spare"]
 
 # (Status, Group, Component, Qty, Spec / note, Suggested source, Est. unit USD)
 ROWS = [
-    # ===== BUY - Drivetrain (Roybot N20 spec; replaces GrowBot's servos) =====
-    ("Buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
-     "Verified pick (~0.75 m/s, strong torque). EXTENDED shaft is REQUIRED so the encoder mounts. Replaces the 3216's spare DC motors", "Pololu", 18),
-    ("Buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
-     "1200 CPR/wheel-rev at 100:1 (already x4-decoded; don't x4 again). VCC=3.3V. Closed-loop speed + odometry", "Pololu", 9),
-    ("Buy", "Drivetrain", "60 mm wheel for N20 (3 mm D-shaft), rubber tire", 2,
-     "3216 wheels don't fit the N20 shaft. Buy rubber-tired (don't print - need grip)", "Pololu / Amazon", 4),
+    # ===== BUY - Drivetrain (drive the 3216 kit's own DC motors; N20 deferred) =====
     ("Buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
-     "Motor driver. VM = 6V motor rail, VCC = 3.3V, PWM >=20 kHz, encoder-static stall cutoff", "Adafruit / Pololu", 5),
+     "Motor driver for the 3216's DC motors. VM = 6V motor rail, VCC = 3.3V, PWM >=20 kHz. OPEN-LOOP (no encoders this build)", "Adafruit / Pololu", 5),
 
     # ===== BUY - Compute & sensing =====
     ("Buy", "Compute", "microSD card, 32 GB Class 10 / A1", 1,
@@ -66,8 +60,6 @@ ROWS = [
      "#1 cat-safety item: NO free end, over-molded. Attended play only", "craft / Amazon", 5),
 
     # ===== PRINT (you have a printer) =====
-    ("Print", "Drivetrain", "N20 -> 3216 motor-mount adapter", 2,
-     "The 3216's mounts fit its DC motors, not N20s - print an adapter bracket", "3D print", 0),
     ("Print", "Structure", "Top cover + wheel shroud", 1,
      "Cat-safety: shroud wheel gaps (<4-6 mm or >25 mm), cover the electronics", "3D print", 0),
     ("Print", "Structure", "Captive-lure boom arm", 1, "Rigid arm holding the lure with no free end", "3D print", 0),
@@ -79,8 +71,9 @@ ROWS = [
     ("Have", "Compute", "Cables incl. USB power cable", 1, "In your Pi kit (bench power/flashing; on-robot the Pi runs off the 5V rail)", "(have)", 0),
     ("Have", "Chassis", "Adafruit 3216 chassis - frame + caster ball + hardware", 1, "Your base kit = the robot body", "(have)", 0),
 
-    # ===== SPARE (have, unused in this build) =====
-    ("Spare", "Chassis", "3216 bundled DC motors + 2 wheels", 1, "Superseded by the N20 drivetrain - keep as spares", "(have)", 0),
+    # ===== HAVE - drivetrain (the cost-saver: use what's in the kit) =====
+    ("Have", "Drivetrain", "3216 DC motors + 2 wheels (USED this build)", 1,
+     "Drive open-loop off these instead of buying N20s. No encoders -> no odometry/closed-loop speed (fine for an attended prototype). N20 + encoder = iteration-2 upgrade", "(have)", 0),
 ]
 
 TOOLS = [
@@ -117,10 +110,10 @@ def build():
     ws["A1"] = "Roybot - First-Prototype Bill of Materials"
     ws["A1"].font = TITLE_FONT
     ws.merge_cells("A2:I2")
-    ws["A2"] = ("GrowBot-style first prototype (drive + chase brain + guts + portable power). Dock and "
-                "cliff/bump sensors deferred to iteration 2. RED = buy (your shopping list), BLUE = 3D-print, "
-                "GREEN = already have, GREY = spare. Power = 1S->TP4056->dual MT3608 (5.1V Pi / 6.0V motors). "
-                "Prices are rough ballparks, not quotes.")
+    ws["A2"] = ("GrowBot-style first prototype, COST-CUT: drive open-loop off the 3216 kit's own DC motors + "
+                "wheels (N20s + encoders = iteration-2 upgrade). Dock + cliff/bump sensors also deferred. "
+                "RED = buy (your shopping list), BLUE = 3D-print, GREEN = already have, GREY = spare. "
+                "Power = 1S->TP4056->dual MT3608 (5.1V Pi / 6.0V motors). Prices are rough ballparks, not quotes.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
     ws.row_dimensions[2].height = 54
