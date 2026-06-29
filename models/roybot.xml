@@ -22,13 +22,13 @@
             rgba="0.3 0.45 0.8 1"/>
       <site name="imu" pos="0 0 0" size="0.005"/>
 
-      <body name="left_wheel" pos="0 0.05 0.0">
+      <body name="left_wheel" pos="0 0.055 0.0">
         <joint name="left_wheel_joint" type="hinge" axis="0 1 0"/>
         <geom type="cylinder" size="0.03 0.008" quat="0.7071 0.7071 0 0"
               mass="0.025" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
       </body>
 
-      <body name="right_wheel" pos="0 -0.05 0.0">
+      <body name="right_wheel" pos="0 -0.055 0.0">
         <joint name="right_wheel_joint" type="hinge" axis="0 1 0"/>
         <geom type="cylinder" size="0.03 0.008" quat="0.7071 0.7071 0 0"
               mass="0.025" rgba="0.15 0.15 0.15 1" friction="1.2 0.1 0.01"/>
@@ -43,11 +43,10 @@
   </worldbody>
 
   <actuator>
-    <!-- forcerange = estimated 3216 DC-motor stall torque ~0.08 N.m (small 3-6 V geared DC,
-         1.5 A stall) so the policy learns within the torque it will actually have. Refine after
-         measuring the real motor (lower than the deferred N20's 0.157 N.m). -->
-    <velocity name="left_motor"  joint="left_wheel_joint"  kv="5.0" forcerange="-0.08 0.08"/>
-    <velocity name="right_motor" joint="right_wheel_joint" kv="5.0" forcerange="-0.08 0.08"/>
+    <!-- forcerange = real 100:1 N20 stall torque ~0.157 N.m (slightly derated). Encoders let the Pi
+         close the wheel-speed loop, so this velocity actuator has a faithful hardware counterpart. -->
+    <velocity name="left_motor"  joint="left_wheel_joint"  kv="5.0" forcerange="-0.15 0.15"/>
+    <velocity name="right_motor" joint="right_wheel_joint" kv="5.0" forcerange="-0.15 0.15"/>
   </actuator>
 
   <sensor>

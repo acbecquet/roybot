@@ -7,15 +7,15 @@ N_SUBSTEPS = round((1.0 / CONTROL_HZ) / SIM_TIMESTEP)  # = 10
 EPISODE_SECONDS = 20.0
 CONTROL_DT = 1.0 / CONTROL_HZ
 
-# --- drivetrain geometry (3216 kit DC motors + bundled wheels, open-loop; cost-saver prototype) ---
-# Wheel OD + top speed are ESTIMATES for the 3216 kit (no published RPM). Confirm from the bot in
-# hand: measure wheel OD, and spin a motor at 6 V counting no-load wheel revs -> then refit + re-train.
-WHEEL_RADIUS = 0.03             # m (3216 wheel ~60-63 mm; measure to confirm)
-WHEEL_BASE = 0.10               # m (3216 native wheel track; measure to confirm)
-MAX_WHEEL_RAD_S = 15.0          # rad/s ~ 0.45 m/s top at this wheel (3216 DC-motor estimate)
+# --- drivetrain geometry (Pololu HPCB 6V 100:1 N20 + 60 mm wheel + encoders, 6V rail; verified spec) ---
+# Encoders let the Pi close a wheel-speed PID, so this sim velocity actuator has a real counterpart.
+# Confirm wheel OD + mounted track from the assembled bot, then refit + re-train if they differ.
+WHEEL_RADIUS = 0.03             # m (60 mm N20 wheel)
+WHEEL_BASE = 0.11               # m (left-right wheel track, N20-mounted on the 3216)
+MAX_WHEEL_RAD_S = 25.05         # rad/s = 239 rpm loaded (330 rpm free-run * 0.725 derate) at 6V
 
 # --- action scaling (policy outputs in [-1, 1]) ---
-ACTION_VFWD_MAX = 0.45          # m/s (3216 DC-motor estimated top speed; confirm by measuring)
+ACTION_VFWD_MAX = 0.6           # m/s (N20 100:1 @6V realizes this with margin)
 ACTION_VYAW_MAX = 6.0           # rad/s
 
 # --- moody cat ---

@@ -23,9 +23,15 @@ STATUSES = ["Buy", "Print", "Have", "Spare"]
 
 # (Status, Group, Component, Qty, Spec / note, Suggested source, Est. unit USD)
 ROWS = [
-    # ===== BUY - Drivetrain (drive the 3216 kit's own DC motors; N20 deferred) =====
+    # ===== BUY - Drivetrain (N20 + encoders: closed-loop, enables stall cutoff + odometry) =====
+    ("Buy", "Drivetrain", "Pololu HPCB 6V 100:1 micro metal gearmotor, EXTENDED back-shaft", 2,
+     "Verified pick (~0.75 m/s, strong torque). EXTENDED shaft is REQUIRED so the encoder mounts. Replaces the 3216's DC motors (now spares)", "Pololu", 18),
+    ("Buy", "Drivetrain", "Pololu magnetic quadrature encoder pair (micro metal gearmotor)", 1,
+     "1200 CPR/wheel-rev at 100:1 (already x4-decoded). VCC=3.3V. Gives closed-loop wheel speed (matches the sim's velocity model), encoder-vs-command STALL CUTOFF, and odometry for docking", "Pololu", 9),
+    ("Buy", "Drivetrain", "60 mm wheel for N20 (3 mm D-shaft), rubber tire", 2,
+     "3216 wheels don't fit the N20 shaft. Rubber tire for grip", "Pololu / Amazon", 4),
     ("Buy", "Drivetrain", "TB6612FNG dual H-bridge breakout", 1,
-     "Motor driver for the 3216's DC motors. VM = the shared 5V rail, VCC = 3.3V, PWM >=20 kHz. OPEN-LOOP (no encoders this build)", "Adafruit / Pololu", 5),
+     "Motor driver. VM = the 6V motor rail, VCC = 3.3V, PWM >=20 kHz. Closed-loop via the encoders + firmware stall cutoff", "Adafruit / Pololu", 5),
 
     # ===== BUY - Compute & sensing =====
     ("Buy", "Compute", "microSD card, 32 GB Class 10 / A1", 1,
@@ -47,19 +53,22 @@ ROWS = [
     ("Buy", "Power", "18650 battery holder", 1, "Cell holder + contacts", "Amazon", 2),
     ("Buy", "Power", "TP4056 USB-C charge + protect module", 1,
      "In-place recharging; get the PROTECTED version with OUT+/OUT- (GrowBot #13)", "Amazon", 2),
-    ("Buy", "Power", "MT3608 boost module", 1,
-     "Boosts the 1S cell (3.7V) UP to ~5.1V = the single shared 5V rail (Pi + motors + amp + LED), GrowBot V0 style. 3216 motors are 3-6V so 5V is fine (dial to 6V for max speed if ever wanted). Add a 2nd MT3608 for a separate motor rail ONLY if a double-stall reboots the Pi (GrowBot #14)", "Amazon", 2),
-    ("Buy", "Power", "Electrolytic cap 470-1000 uF, 10 V+", 1, "Across the 5V rail to cover motor surge dips (GrowBot #15)", "Amazon", 1),
+    ("Buy", "Power", "MT3608 boost module (x2)", 2,
+     "Dual-rail off the 1S cell: one set to ~5.1V (Pi + amp + LED), one to ~6.0V (the N20 motor rail = TB6612 VM). A separate motor rail isolates the Pi from motor surge/stall brownout - needed given the N20s' 1.5A stall (GrowBot note #5 endorses a 2nd MT3608 for motors)", "Amazon", 2),
+    ("Buy", "Power", "Electrolytic cap 470-1000 uF, 10 V+", 2, "One across each rail for surge dips; pair with firmware PWM soft-start + a drive watchdog (GrowBot #15)", "Amazon", 1),
     ("Buy", "Power", "SPST power switch", 1, "Main cutoff (GrowBot #16)", "Amazon", 2),
 
     # ===== BUY - Build / safety =====
     ("Buy", "Build", "Hookup wire + Dupont jumpers", 1, "Wire per the GrowBot diagram + the TB6612", "Amazon", 8),
+    ("Buy", "Build", "330-470 ohm resistor (WS2812 data line)", 1, "Series resistor on the LED-ring data line (3.3V GPIO -> 5V ring); reality-check fix", "Amazon", 1),
     ("Buy", "Build", "3M double-sided mounting squares", 1, "GrowBot's no-screw board mounting (or print mounts)", "Amazon", 5),
     ("Buy", "Build", "PETG filament (known-safe), 1 spool", 1, "For the printed parts below - skip if your printer came with filament", "Amazon", 25),
     ("Buy", "Safety", "Captive lure (feather/pom on short rigid/braided arm)", 1,
      "#1 cat-safety item: NO free end, over-molded. Attended play only", "craft / Amazon", 5),
 
     # ===== PRINT (you have a printer) =====
+    ("Print", "Drivetrain", "N20 -> 3216 motor-mount adapter", 2,
+     "The 3216's mounts fit its DC motors, not N20s - print an adapter bracket", "3D print", 0),
     ("Print", "Structure", "Top cover + wheel shroud", 1,
      "Cat-safety: shroud wheel gaps (<4-6 mm or >25 mm), cover the electronics", "3D print", 0),
     ("Print", "Structure", "Captive-lure boom arm", 1, "Rigid arm holding the lure with no free end", "3D print", 0),
@@ -71,9 +80,9 @@ ROWS = [
     ("Have", "Compute", "Cables incl. USB power cable", 1, "In your Pi kit (bench power/flashing; on-robot the Pi runs off the 5V rail)", "(have)", 0),
     ("Have", "Chassis", "Adafruit 3216 chassis - frame + caster ball + hardware", 1, "Your base kit = the robot body", "(have)", 0),
 
-    # ===== HAVE - drivetrain (the cost-saver: use what's in the kit) =====
-    ("Have", "Drivetrain", "3216 DC motors + 2 wheels (USED this build)", 1,
-     "Drive open-loop off these instead of buying N20s. No encoders -> no odometry/closed-loop speed (fine for an attended prototype). N20 + encoder = iteration-2 upgrade", "(have)", 0),
+    # ===== SPARE (have, not used this build) =====
+    ("Spare", "Drivetrain", "3216 DC motors + 2 wheels", 1,
+     "Superseded by the N20 + encoder drivetrain - keep as spares / backup", "(have)", 0),
 ]
 
 TOOLS = [
@@ -110,10 +119,10 @@ def build():
     ws["A1"] = "Roybot - First-Prototype Bill of Materials"
     ws["A1"].font = TITLE_FONT
     ws.merge_cells("A2:I2")
-    ws["A2"] = ("GrowBot-style first prototype, COST-CUT: drive open-loop off the 3216 kit's own DC motors + "
-                "wheels (N20s + encoders = iteration-2 upgrade). Dock + cliff/bump sensors also deferred. "
-                "RED = buy (your shopping list), BLUE = 3D-print, GREEN = already have. "
-                "Power = 1S 18650 -> TP4056 -> single MT3608 (one ~5.1V rail for everything; 3216 motors are 3-6V). Prices are rough ballparks, not quotes.")
+    ws["A2"] = ("GrowBot-style first prototype: N20 + encoder closed-loop drivetrain (enables stall cutoff + odometry) + "
+                "full GrowBot senses (camera + mic + speaker + IMU + LED). Dock + cliff/bump sensors deferred to iteration 2. "
+                "RED = buy (your shopping list), BLUE = 3D-print, GREEN = already have, GREY = spare. "
+                "Power = 1S 18650 -> TP4056 -> dual MT3608 (~5.1V Pi rail + ~6.0V motor rail). Tools assumed on hand. Prices are rough ballparks, not quotes.")
     ws["A2"].font = Font(italic=True, size=10, color="666666")
     ws["A2"].alignment = WRAP
     ws.row_dimensions[2].height = 54
