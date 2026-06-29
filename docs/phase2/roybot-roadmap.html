@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roybot — Full Project Roadmap</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --card:#fff; --ink:#1c1c1e; --muted:#5f6368; --line:#e3e3e0;
+    --accent:#c8552b; --accent-soft:#fdeee7;
+    --done:#2e7d32; --done-bg:#e8f3e9; --now:#c8552b; --now-bg:#fdeee7;
+    --next:#1f3a8a; --next-bg:#e8ecf7; --later:#5f6368; --later-bg:#eeeeee; --warn:#b3261e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16171a; --card:#1f2125; --ink:#ecedf0; --muted:#9aa0a6; --line:#33363c;
+      --accent:#ff7a4d; --accent-soft:#3a261d;
+      --done:#7bd389; --done-bg:#1e3322; --now:#ff7a4d; --now-bg:#3a261d;
+      --next:#8ab4ff; --next-bg:#1e2740; --later:#9aa0a6; --later-bg:#2a2c30; --warn:#ff8a80;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; padding:0 0 90px;}
+  header.top{position:sticky; top:0; z-index:10; background:var(--card);
+    border-bottom:1px solid var(--line); padding:16px 22px}
+  .wrap{max-width:920px; margin:0 auto; padding:0 22px}
+  header.top .wrap{padding:0}
+  h1{font-size:24px; margin:0 0 4px}
+  .sub{color:var(--muted); font-size:14px; margin:0}
+  .intro{background:var(--accent-soft); border:1px solid var(--line); border-radius:12px;
+    padding:14px 18px; margin:22px 0; font-size:14.5px}
+  .legend{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+  .pill{font-size:12px; font-weight:700; padding:2px 9px; border-radius:99px}
+  .b-done{background:var(--done-bg); color:var(--done)}
+  .b-now{background:var(--now-bg); color:var(--now)}
+  .b-next{background:var(--next-bg); color:var(--next)}
+  .b-later{background:var(--later-bg); color:var(--later)}
+  .phase{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:18px 20px; margin:16px 0; border-left:5px solid var(--line)}
+  .phase.done{border-left-color:var(--done)} .phase.now{border-left-color:var(--now)}
+  .phase.next{border-left-color:var(--next)} .phase.later{border-left-color:var(--later)}
+  .phead{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:4px}
+  h2{font-size:19px; margin:0}
+  .num{font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700}
+  .goal{color:var(--ink); font-size:15px; margin:6px 0 12px}
+  .goal b{color:var(--accent)}
+  h3{font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted);
+    margin:14px 0 6px}
+  ul{margin:0; padding-left:20px} li{padding:2px 0}
+  .meta{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media (max-width:640px){ .meta{grid-template-columns:1fr} }
+  .risk{color:var(--warn)}
+  .tag{display:inline-block; font-size:12px; font-weight:600; background:var(--accent-soft);
+    color:var(--accent); border:1px solid var(--line); border-radius:7px; padding:1px 8px}
+  textarea{width:100%; margin-top:8px; min-height:46px; resize:vertical; background:var(--bg);
+    color:var(--ink); border:1px dashed var(--line); border-radius:9px; padding:9px 11px;
+    font:14px/1.5 inherit}
+  textarea:focus{border-style:solid; border-color:var(--accent); outline:none}
+  .notes-label{font-size:12px; color:var(--muted); margin-top:12px; font-weight:600}
+  footer{position:fixed; bottom:0; left:0; right:0; background:var(--card);
+    border-top:1px solid var(--line); padding:9px 22px}
+  footer .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .saved{color:var(--muted); font-size:13px} a{color:var(--accent)}
+  button{background:transparent; color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:6px 12px; font:13px inherit; cursor:pointer}
+  button:hover{color:var(--warn); border-color:var(--warn)}
+  @media print{ header.top,footer{position:static} body{padding-bottom:0} .phase{break-inside:avoid} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Roybot — Full Project Roadmap</h1>
+  <p class="sub">A small wheeled robot that plays with Roy on her terms, growing into a curious companion. Review each phase and drop feedback in the Notes boxes — they save in your browser.</p>
+</div></header>
+
+<div class="wrap">
+  <div class="intro">
+    Built from the locked decisions + the 8-agent reality check. Two axes run through it: the <b>build phases</b> below,
+    and the <b>perception stages A→B→C</b> (offload to PC → onboard collar tracker → onboard no-collar) that let the
+    robot reach standalone without ever changing the policy. Hardware is staged the same way (see the BOM).
+    <div class="legend">
+      <span class="pill b-done">DONE</span><span class="pill b-now">NOW</span>
+      <span class="pill b-next">NEXT</span><span class="pill b-later">LATER</span>
+    </div>
+  </div>
+
+  <!-- PHASE 0 -->
+  <section class="phase done">
+    <div class="phead"><span class="num">Phase 0</span><h2>Foundations</h2><span class="pill b-done">DONE</span></div>
+    <p class="goal">Goal: <b>de-risk the hard part — learning to play with Roy — entirely in software</b> before spending on hardware.</p>
+    <div class="meta">
+      <div>
+        <h3>What's built</h3>
+        <ul>
+          <li>MuJoCo wheeled twin + moody simulated cat (behavior state machine, per-episode personality)</li>
+          <li>Consent-based chase/play PPO policy → <code>final_policy.npz</code> (torch-free NumPy MLP, Pi-deployable @50 Hz)</li>
+          <li>Specs: drive-chase core (#1), vision &amp; roadmap, perception architecture (#2)</li>
+          <li>8-agent reality check + the staged BOM</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Success criteria — met</h3>
+        <ul>
+          <li>Plays when invited, gives space when not, never tips</li>
+          <li>Eval: 95.5% time-in-band · consent (approach-when-disinterested) 0.005 · 0 tip-overs</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p0" placeholder="Feedback on Phase 0…"></textarea>
+  </section>
+
+  <!-- PHASE 1 -->
+  <section class="phase now">
+    <div class="phead"><span class="num">Phase 1</span><h2>First prototype build</h2><span class="pill b-now">NOW</span>
+      <span class="tag">BOM Stage A (~$158)</span></div>
+    <p class="goal">Goal: a physical bot that <b>drives, runs the policy, and visibly reacts to Roy</b> (perception offloaded to the PC).</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Order the Stage-A BOM (~$158)</li>
+          <li>Assemble: solder header; print + mount the N20→3216 adapter, cover/shroud, lure boom; wire the dual rail (meter-set 5.1 V / 6.0 V), TB6612, encoders, IMU, camera, audio, LED</li>
+          <li>Driver bring-up: self-check (straight = equal, spin = opposite, <em>forward-polarity</em>); encoder PID closes the wheel-speed loop (matches the sim)</li>
+          <li>Deploy the policy: NumPy MLP @50 Hz on the Pi, frame-stack N_STACK=6; verify obs order/scale vs <code>env.py</code></li>
+          <li>Perception <b>Stage A</b>: stream camera → PC detector → CatState back over WiFi</li>
+          <li>Prove "reacts to Roy" with a <em>hand-written</em> turn-toward-blob controller before swapping in the MLP</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Risks &amp; mitigations</h3>
+        <ul>
+          <li class="risk">Power brownout on stall → dual rail + bulk cap + PWM soft-start + drive watchdog</li>
+          <li class="risk">Cat-lost on dropout → handle <code>visible=False</code> (safe idle), never feed stale obs</li>
+          <li class="risk">Obs/reward entanglement → addressed by the Phase 2 reframe (hand-written controller bridges until then)</li>
+        </ul>
+        <h3>Success criteria</h3>
+        <ul>
+          <li>Drives forward + turns in place; executes policy velocity commands</li>
+          <li>Safety floor cuts motors on stall/tip; visibly tracks + reacts to Roy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p1" placeholder="Feedback on Phase 1…"></textarea>
+  </section>
+
+  <!-- PHASE 2 -->
+  <section class="phase next">
+    <div class="phead"><span class="num">Phase 2</span><h2>Standalone perception</h2><span class="pill b-next">NEXT</span>
+      <span class="tag">Perception Stage B · +collar ~$5</span></div>
+    <p class="goal">Goal: <b>cut the PC cord</b> — perception runs entirely onboard the Pi Zero.</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Onboard colored-collar HSV blob tracker (5–15 Hz) + hold/constant-velocity estimator → CatState; collar on Roy</li>
+          <li><b>Obs/reward reframe</b> (the reality-check fix): retrain on bearing / range / approach-sign / engagement / visible; add a trained cat-lost path; widen latency DR to 250–500 ms; down-sample cat obs to 5–10 Hz</li>
+          <li>Calibrate blob-area → range against the collar's known size</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Why it works onboard</h3>
+        <ul>
+          <li>Blob tracking is light enough for the Zero 2 W (a cat <em>neural net</em> is not — that's Stage C)</li>
+          <li>Same bot as Phase 1; only addition is the collar</li>
+        </ul>
+        <h3>Success criteria</h3>
+        <ul><li>Plays with Roy with the PC off and WiFi irrelevant</li></ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p2" placeholder="Feedback on Phase 2…"></textarea>
+  </section>
+
+  <!-- PHASE 3 -->
+  <section class="phase later">
+    <div class="phead"><span class="num">Phase 3</span><h2>Memory + the cloud brain</h2><span class="pill b-later">LATER</span>
+      <span class="tag">Sub-projects #3 / #4</span></div>
+    <p class="goal">Goal: Roybot <b>remembers Roy</b> and gains a language/reflection brain (out of the fast play loop).</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Interaction logging + preference learning (#3): learn Roy's likes/dislikes + schedule, feed the behavior arbiter</li>
+          <li>Swappable LLM client: OpenRouter <code>deepseek/deepseek-v4-flash</code>, async, model id from config (<code>deepseek-v4-pro</code> one-line fallback)</li>
+          <li>Home base (PC): store recordings; nightly <b>"dream"</b> — consolidate logs, update Roy-prefs, optionally fine-tune the policy</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Risks &amp; mitigations</h3>
+        <ul>
+          <li class="risk">Key handling → <code>OPENROUTER_API_KEY</code> from env + .gitignore + hard spend cap, before the first commit</li>
+          <li class="risk">Cloud needs WiFi → degrade to a no-op offline; never block the robot on a slow call</li>
+          <li class="risk">Privacy → send only abstracted text to the cloud, never raw audio/images</li>
+        </ul>
+        <h3>Success criteria</h3>
+        <ul><li>Daily Roy report generated; preferences measurably shift behavior; dream runs nightly</li></ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p3" placeholder="Feedback on Phase 3…"></textarea>
+  </section>
+
+  <!-- PHASE 4 -->
+  <section class="phase later">
+    <div class="phead"><span class="num">Phase 4</span><h2>Companion / voice</h2><span class="pill b-later">LATER</span>
+      <span class="tag">Sub-project #5 · uses onboard audio</span></div>
+    <p class="goal">Goal: <b>two-way voice</b> and proactive reports on how Roy's doing.</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Wake-word + STT + TTS (prefer local STT/TTS — cuts latency, keeps raw audio off-cloud)</li>
+          <li>Proactive daily Roy reports; Q&amp;A ("how's Roy?")</li>
+          <li>Interesting-event detection → recording → home-base storage</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Hardware</h3>
+        <ul><li>Uses the mic + amp + speaker already onboard from Stage A — no new parts</li></ul>
+        <h3>Success criteria</h3>
+        <ul><li>Spoken answer to "how's Roy?"; interesting clips saved to the PC</li></ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p4" placeholder="Feedback on Phase 4…"></textarea>
+  </section>
+
+  <!-- PHASE 5 -->
+  <section class="phase later">
+    <div class="phead"><span class="num">Phase 5</span><h2>Self-charging dock</h2><span class="pill b-later">LATER</span>
+      <span class="tag">Sub-project #6 · dock parts</span></div>
+    <p class="goal">Goal: Roybot <b>returns and charges itself</b>, and docking triggers the nightly dream.</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Battery-low → IR homing (TSOP receiver onboard + IR beacon on the dock) → passive funnel → pogo-pin charge</li>
+          <li>Uses the Phase-1 encoders/odometry for the dock approach</li>
+          <li>Docking event triggers the dream (Phase 3)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Hardware</h3>
+        <ul><li>Dock subsystem (pogo pins, TSOP38238, IR LED, dock PSU, printed funnel) — deferred from the prototype, added here</li></ul>
+        <h3>Success criteria</h3>
+        <ul><li>Bot docks + charges unattended; dream fires on dock</li></ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p5" placeholder="Feedback on Phase 5…"></textarea>
+  </section>
+
+  <!-- PHASE 6 -->
+  <section class="phase later">
+    <div class="phead"><span class="num">Phase 6</span><h2>Full standalone vision + hardening</h2><span class="pill b-later">LATER</span>
+      <span class="tag">Perception Stage C (~$150)</span></div>
+    <p class="goal">Goal: recognize Roy with <b>no collar, fully onboard</b>, plus durability/safety polish.</p>
+    <div class="meta">
+      <div>
+        <h3>Key work</h3>
+        <ul>
+          <li>Brain upgrade: Pi 5 + AI accelerator (Coral USB TPU or Pi AI HAT / Hailo-8L) + larger battery</li>
+          <li>On-device cat detector (no collar); optionally a learned engagement estimate</li>
+          <li>Enclosure airflow; PETG durability; cat-safety final sign-off</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Success criteria</h3>
+        <ul>
+          <li>Detects + plays with Roy onboard — no collar, no PC</li>
+          <li>Passes durability + cat-safety review</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notes-label">Your notes</div>
+    <textarea data-note="p6" placeholder="Feedback on Phase 6…"></textarea>
+  </section>
+
+  <section class="phase">
+    <div class="phead"><h2>Overall feedback</h2></div>
+    <p class="goal">Anything cross-cutting — sequencing, scope, priorities, budget.</p>
+    <textarea data-note="overall" placeholder="Overall thoughts, reordering, what to cut/add…" style="min-height:90px"></textarea>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  <span class="saved" id="saved">Notes save in this browser.</span>
+  <button id="reset">Clear all notes</button>
+</div></footer>
+
+<script>
+(function(){
+  var KEY="roybot-roadmap-v1", saved={};
+  try{ saved=JSON.parse(localStorage.getItem(KEY))||{} }catch(e){ saved={} }
+  var areas=[].slice.call(document.querySelectorAll('textarea[data-note]'));
+  areas.forEach(function(t){
+    t.value=saved[t.dataset.note]||"";
+    t.addEventListener('input',function(){ saved[t.dataset.note]=t.value; localStorage.setItem(KEY,JSON.stringify(saved)); });
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    if(!confirm("Clear every note?")) return;
+    saved={}; localStorage.setItem(KEY,"{}"); areas.forEach(function(t){t.value="";});
+  });
+})();
+</script>
+</body>
+</html>
